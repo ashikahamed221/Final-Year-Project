@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CoverLetterGenerator from "./pages/CoverLetterGenerator";
 import ResumeMaker from "./pages/ResumeMaker";
+import CareerRoadmap from "./pages/CareerRoadmap";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/cover-letter" element={<CoverLetterGenerator />} />
             <Route path="/resume-maker" element={<ResumeMaker />} />
+            <Route path="/career-roadmap" element={<CareerRoadmap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
