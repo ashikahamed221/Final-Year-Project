@@ -6,7 +6,9 @@ import {
   Linkedin,
   FileUser,
   LucideIcon,
+  BookOpenCheck
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Feature {
   icon: LucideIcon;
@@ -18,16 +20,16 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: FileText,
-    title: "Cover Letter Generator",
+    icon: BookOpenCheck,
+    title: "AI Mock Interview",
     description:
-      "Create compelling, personalized cover letters tailored to any job posting in seconds.",
+      "Practice with an AI interviewer that simulates real interview scenarios and gives feedback.",
     color: "text-feature-blue",
     bgColor: "bg-feature-blue/10",
   },
   {
     icon: Map,
-    title: "Career Roadmap",
+    title: "AI Career Roadmap",
     description:
       "Get AI-generated career paths and skill development plans based on your goals.",
     color: "text-feature-purple",
@@ -35,20 +37,13 @@ const features: Feature[] = [
   },
   {
     icon: MessageSquare,
-    title: "Interview Prep Bot",
+    title: "AI Interview Prep ",
     description:
       "Practice with an AI interviewer that simulates real interview scenarios and gives feedback.",
     color: "text-feature-green",
     bgColor: "bg-feature-green/10",
   },
-  {
-    icon: Linkedin,
-    title: "LinkedIn Optimizer",
-    description:
-      "Generate professional headline, summary, and content ideas to boost your profile.",
-    color: "text-feature-orange",
-    bgColor: "bg-feature-orange/10",
-  },
+  
   {
     icon: FileUser,
     title: "Resume Maker",
@@ -74,7 +69,7 @@ const FeaturesSection = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
           {features.map((feature, index) => (
             <Card
               key={feature.title}
@@ -91,6 +86,7 @@ const FeaturesSection = () => {
                 </div>
                 <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
+               
               </CardContent>
 
               {/* Hover glow effect */}

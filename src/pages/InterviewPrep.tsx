@@ -7,6 +7,9 @@ import { Save, Trash2, MessageSquare } from "lucide-react";
 import ChatMessage from "@/components/interview/ChatMessage";
 import ChatInput from "@/components/interview/ChatInput";
 import RoleSelector from "@/components/interview/RoleSelector";
+import { generateInterviewResponse } from "@/utils/aiApi";
+import { Link } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 interface Message {
   id: string;
@@ -39,18 +42,26 @@ const InterviewPrep = () => {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
-    // TODO: Replace with actual AI API call (OpenRouter/Lovable AI)
-    // Example: const response = await fetch('/api/interview', { ... })
-    
-    setTimeout(() => {
+    const history = messages.map(msg => ({ role: msg.role, content: msg.content }));
+    history.push({ role: "user", content });
+
+    try {
+      const response = await generateInterviewResponse(history, selectedRole);
       const aiResponse: Message = {
         id: generateId(),
         role: "assistant",
-        content: getMockResponse(content, selectedRole),
+        content: response,
       };
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      toast({
+        title: "AI Response Failed",
+        description: "Failed to get a response from the AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const getMockResponse = (question: string, role: string): string => {
@@ -84,7 +95,7 @@ Would you like me to provide a more specific answer or ask another question?`;
   const handleSaveConversation = () => {
     // TODO: Implement Firebase save
     // Example: await addDoc(collection(db, 'conversations'), { messages, role: selectedRole, createdAt: new Date() })
-    
+
     toast({
       title: "Conversation Saved",
       description: "Your interview practice session has been saved.",
@@ -100,8 +111,11 @@ Would you like me to provide a more specific answer or ask another question?`;
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-background ">
+      <div className="p-5">
+        <Link to='/' className="mr-4"><LogOut /></Link>
+      </div>
+      <div className="container max-w-4xl mx-auto px-4 mb-30 py-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -123,7 +137,7 @@ Would you like me to provide a more specific answer or ask another question?`;
         </div>
 
         {/* Chat Container */}
-        <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[500px] bg-card/50 border-border">
+        <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[600px] bg-card/50 border-border">
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
             {messages.length === 0 ? (

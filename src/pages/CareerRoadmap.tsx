@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Save, RefreshCw, CheckCircle2, BookOpen, Wrench, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { generateRoadmap } from "@/utils/aiApi";
 
 interface RoadmapStep {
   id: string;
@@ -40,94 +41,31 @@ const CareerRoadmap = () => {
 
     setIsLoading(true);
 
-    // TODO: Replace with actual AI API call
-    // Example: const response = await generateRoadmap({ targetRole, skillLevel, techStack });
-    
-    // Simulated delay for demo
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Mock roadmap data - replace with AI response
-    const mockRoadmap: RoadmapStep[] = [
-      {
-        id: "1",
-        week: "Week 1-2",
-        title: "Foundations & Setup",
-        description: "Set up your development environment and learn the basics of your chosen tech stack.",
-        skills: ["Git", "Terminal", "IDE Setup"],
-        tools: ["VS Code", "GitHub", "Node.js"],
-        resources: [
-          { name: "Git Documentation", url: "#" },
-          { name: "VS Code Tips", url: "#" },
-        ],
-        completed: false,
-      },
-      {
-        id: "2",
-        week: "Week 3-4",
-        title: "Core Concepts",
-        description: "Deep dive into the fundamental concepts required for your target role.",
-        skills: ["HTML", "CSS", "JavaScript"],
-        tools: ["Chrome DevTools", "CodePen"],
-        resources: [
-          { name: "MDN Web Docs", url: "#" },
-          { name: "JavaScript.info", url: "#" },
-        ],
-        completed: false,
-      },
-      {
-        id: "3",
-        week: "Week 5-8",
-        title: "Framework Mastery",
-        description: "Learn and practice with modern frameworks and libraries.",
-        skills: ["React", "State Management", "Routing"],
-        tools: ["React DevTools", "Vite"],
-        resources: [
-          { name: "React Documentation", url: "#" },
-          { name: "React Tutorial", url: "#" },
-        ],
-        completed: false,
-      },
-      {
-        id: "4",
-        week: "Week 9-10",
-        title: "Styling & UI",
-        description: "Master modern CSS techniques and UI component libraries.",
-        skills: ["Tailwind CSS", "Responsive Design", "Accessibility"],
-        tools: ["Figma", "shadcn/ui"],
-        resources: [
-          { name: "Tailwind Docs", url: "#" },
-          { name: "A11y Project", url: "#" },
-        ],
-        completed: false,
-      },
-      {
-        id: "5",
-        week: "Week 11-12",
-        title: "Projects & Portfolio",
-        description: "Build real-world projects and create your professional portfolio.",
-        skills: ["Project Planning", "Deployment", "Documentation"],
-        tools: ["Vercel", "Netlify", "GitHub Pages"],
-        resources: [
-          { name: "Portfolio Examples", url: "#" },
-          { name: "Deployment Guide", url: "#" },
-        ],
-        completed: false,
-      },
-    ];
-
-    setRoadmap(mockRoadmap);
+    try {
+      const response = await generateRoadmap(targetRole, skillLevel, techStack);
+      if (response && response.roadmap) {
+        setRoadmap(response.roadmap);
+        toast({
+          title: "Roadmap Generated!",
+          description: "Your personalized career roadmap is ready.",
+        });
+      } else {
+        throw new Error("Invalid roadmap structure");
+      }
+    } catch (error) {
+      toast({
+        title: "API Error",
+        description: "Failed to generate roadmap. Please try again.",
+        variant: "destructive",
+      });
+    }
     setIsLoading(false);
-
-    toast({
-      title: "Roadmap Generated!",
-      description: "Your personalized career roadmap is ready.",
-    });
   };
 
   const handleSave = async () => {
     // TODO: Replace with actual Firestore save
     // Example: await saveRoadmapToFirestore(roadmap);
-    
+
     toast({
       title: "Roadmap Saved!",
       description: "Your roadmap has been saved to your account.",
@@ -256,11 +194,10 @@ const CareerRoadmap = () => {
                         {/* Timeline Dot */}
                         <button
                           onClick={() => toggleStepCompleted(step.id)}
-                          className={`absolute left-0 top-6 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-                            step.completed
+                          className={`absolute left-0 top-6 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${step.completed
                               ? "bg-primary border-primary text-primary-foreground"
                               : "bg-background border-border hover:border-primary"
-                          }`}
+                            }`}
                         >
                           {step.completed ? (
                             <CheckCircle2 className="h-5 w-5" />

@@ -7,8 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { generateCoverLetter } from "@/utils/aiApi";
+import { useToast } from "@/hooks/use-toast";
 
 const CoverLetterGenerator = () => {
+  const { toast } = useToast();
   const [jobRole, setJobRole] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -19,25 +22,27 @@ const CoverLetterGenerator = () => {
 
   const handleGenerate = async () => {
     setIsLoading(true);
-    // TODO: Implement AI API call here
-    // Simulating API delay for UI demo
-    setTimeout(() => {
-      setGeneratedLetter(`Dear Hiring Manager,
-
-I am writing to express my strong interest in the ${jobRole} position at ${companyName}. With my background in ${userSkills}, I am confident that I would be a valuable addition to your team.
-
-[This is a placeholder - connect your AI API to generate real cover letters]
-
-Your job description emphasizes the need for candidates who can excel in dynamic environments. Throughout my career, I have consistently demonstrated the ability to adapt quickly, learn new technologies, and deliver results that exceed expectations.
-
-I am particularly drawn to ${companyName}'s mission and values. I believe my skills and experience align perfectly with what you're looking for, and I am excited about the opportunity to contribute to your team's success.
-
-Thank you for considering my application. I look forward to the opportunity to discuss how my background and skills would benefit ${companyName}.
-
-Sincerely,
-[Your Name]`);
+    try {
+      const response = await generateCoverLetter({
+        role: jobRole,
+        company: companyName,
+        description: jobDescription,
+        skills: userSkills,
+      });
+      setGeneratedLetter(response);
+      toast({
+        title: "Cover Letter Generated",
+        description: "Your professional cover letter is ready.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate cover letter. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const handleCopy = async () => {
@@ -63,8 +68,8 @@ Sincerely,
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <main className="container mx-auto px-4 py-12">
+
+      <main className="container mx-auto px-4 mt-20 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">

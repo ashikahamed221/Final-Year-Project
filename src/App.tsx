@@ -9,6 +9,7 @@ import CoverLetterGenerator from "./pages/CoverLetterGenerator";
 import ResumeMaker from "./pages/ResumeMaker";
 import CareerRoadmap from "./pages/CareerRoadmap";
 import InterviewPrep from "./pages/InterviewPrep";
+import QuizApp from "./pages/QuizApp";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/resume-maker" element={<ResumeMaker />} />
             <Route path="/career-roadmap" element={<CareerRoadmap />} />
             <Route path="/interview-prep" element={<InterviewPrep />} />
+            <Route path="/quiz-app" element={<QuizApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

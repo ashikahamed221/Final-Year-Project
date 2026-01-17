@@ -23,6 +23,7 @@ import ProjectsForm, { type Project } from "@/components/resume/ProjectsForm";
 import SkillsForm from "@/components/resume/SkillsForm";
 import ResumePreview from "@/components/resume/ResumePreview";
 
+
 const ResumeMaker = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +52,8 @@ const ResumeMaker = () => {
 
   const handleGenerateSummary = async () => {
     setIsLoading(true);
-    
+
+
     // TODO: Replace with your AI API call
     // Example payload to send:
     // const payload = {
@@ -61,24 +63,22 @@ const ResumeMaker = () => {
     //   projects,
     //   skills,
     // };
-    
+
     // Simulating API call
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
     // Mock generated summary
-    const mockSummary = `Results-driven professional with expertise in ${skills.technical || "software development"}. ${
-      experience.length > 0
-        ? `Proven track record at ${experience[0].company || "leading companies"}.`
-        : ""
-    } ${
-      education.length > 0
+    const mockSummary = `Results-driven professional with expertise in ${skills.technical || "software development"}. ${experience.length > 0
+      ? `Proven track record at ${experience[0].company || "leading companies"}.`
+      : ""
+      } ${education.length > 0
         ? `Holds a ${education[0].degree || "degree"} from ${education[0].institution || "a prestigious institution"}.`
         : ""
-    } Passionate about delivering high-quality solutions and driving innovation.`;
-    
+      } Passionate about delivering high-quality solutions and driving innovation.`;
+
     setSummary(mockSummary);
     setIsLoading(false);
-    
+
     toast({
       title: "Summary Generated",
       description: "AI has created a professional summary for your resume.",
@@ -86,12 +86,53 @@ const ResumeMaker = () => {
   };
 
   const handleDownloadPDF = async () => {
-    // TODO: Implement PDF generation
-    // You can use libraries like html2pdf, jsPDF, or react-pdf
+    // PDF generation using react-pdf
     toast({
       title: "Download Started",
       description: "Your resume PDF is being prepared...",
     });
+
+    try {
+      // Dynamically import react-pdf/renderer and the new ResumePDF component
+      const [pdfModule, React, { default: ResumePDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('react'),
+        import('@/components/resume/ResumePDF')
+      ]);
+
+      // Render PDF and trigger download
+      const blob = await pdfModule.pdf(
+        React.createElement(ResumePDF, {
+          personalDetails,
+          education,
+          experience,
+          projects,
+          skills,
+          summary,
+        }) as any
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${personalDetails.fullName || 'resume'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Complete",
+        description: "Your resume PDF has been downloaded.",
+      });
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast({
+        title: "Download Failed",
+        description: "There was an error generating your PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -105,7 +146,7 @@ const ResumeMaker = () => {
     //   summary,
     //   updatedAt: new Date(),
     // };
-    
+
     toast({
       title: "Resume Saved",
       description: "Your resume has been saved successfully.",
@@ -120,7 +161,7 @@ const ResumeMaker = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link to="/">
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 hidden">
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
@@ -129,7 +170,7 @@ const ResumeMaker = () => {
                 <div className="p-2 rounded-lg bg-primary/10">
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">
+                <h1 className="md:text-xl font-bold text-foreground">
                   Resume Maker
                 </h1>
               </div>
@@ -250,7 +291,7 @@ const ResumeMaker = () => {
           </TabsContent>
 
           <TabsContent value="preview">
-            <div className="bg-muted/30 p-8 rounded-xl">
+            <div className="bg-muted/30 p-8 rounded-xl ">
               <ResumePreview
                 personalDetails={personalDetails}
                 education={education}

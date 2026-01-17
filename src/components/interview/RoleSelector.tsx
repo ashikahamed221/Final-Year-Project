@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "recharts";
 
 interface RoleSelectorProps {
   value: string;
@@ -21,6 +22,7 @@ const roles = [
   { value: "product-manager", label: "Product Manager" },
   { value: "ui-ux", label: "UI/UX Designer" },
   { value: "mobile", label: "Mobile Developer" },
+  { value: "AI & ML", label: "AI & ML developer"}
 ];
 
 const RoleSelector = ({ value, onChange, disabled }: RoleSelectorProps) => {
