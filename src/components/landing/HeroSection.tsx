@@ -51,7 +51,7 @@ const HeroSection = () => {
         </h1>
 
         <p
-          className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground opacity-0 animate-fade-in-up sm:text-xl"
+          className="mx-auto mt-6 max-w-2xl text-lg text-center text-muted-foreground opacity-0 animate-fade-in-up sm:text-xl"
           style={{ animationDelay: "0.3s" }}
         >
           Generate stunning cover letters, build professional resumes, ace
@@ -83,12 +83,7 @@ const HeroSection = () => {
           </Button>
         </div>
 
-        <p
-          className="mt-6 text-sm text-muted-foreground opacity-0 animate-fade-in"
-          style={{ animationDelay: "0.5s" }}
-        >
-          No credit card required · Free to get started
-        </p>
+       
       </div>
     </section>
   );

@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+
 // Components
 import DomainSelector from "@/components/mockInterview/DomainSelector";
 import QuestionCard from "@/components/mockInterview/QuestionCard";
@@ -14,19 +15,25 @@ import TestSummary from "@/components/mockInterview/TestSummary";
 // Data and utilities
 import {
     domainQuestions,
-    getQuestionsByDomain,
     calculatePerformanceLevel,
     MIN_RESPONSE_TIME,
     Question,
     TestResult,
     TestSummary as TestSummaryType,
 } from "@/data/mockInterviewData";
-import { generateQuestionExplanation } from "@/utils/aiApi";
+import { generateQuestionExplanation, generateInterviewQuestions } from "@/utils/aiApi";
+import { saveTestResult } from "@/api/testApi";
+import { useAuth } from "@clerk/clerk-react";
 
-type TestPhase = "idle" | "testing" | "completed";
+type TestPhase = "idle" | "loading" | "testing" | "completed";
 
 const QuizApp = () => {
     const { toast } = useToast();
+
+    // Auth state
+    // const [userId, setUserId] = useState<string | null>(null);
+    const { getToken } = useAuth();
+
 
     // Test state
     const [testPhase, setTestPhase] = useState<TestPhase>("idle");
@@ -57,7 +64,9 @@ const QuizApp = () => {
     // Current question helper
     const currentQuestion = questions[currentQuestionIndex];
 
-    // Navigation prevention during test
+    // Get user from auth client on mount
+
+
     useEffect(() => {
         if (testPhase === "testing") {
             // Prevent page refresh/close
@@ -66,6 +75,9 @@ const QuizApp = () => {
                 e.returnValue = "You have an ongoing test. Are you sure you want to leave?";
                 return e.returnValue;
             };
+
+
+
 
             // Block browser back button
             window.history.pushState(null, "", window.location.href);
@@ -86,6 +98,7 @@ const QuizApp = () => {
                 window.removeEventListener("popstate", handlePopState);
             };
         }
+
     }, [testPhase, toast]);
 
     // Timer logic
@@ -104,35 +117,114 @@ const QuizApp = () => {
                 }
             };
         }
-    }, [testPhase, currentQuestionIndex, isAnswered]);
 
-    // Start test handler
-    const handleStartTest = useCallback(() => {
+
+
+        // save to db
+        //     if (testPhase !== "completed") return;
+
+        //     const persistResult = async () => {
+        //         try {
+        //             await saveTestResult(getTestSummary(), results);
+
+        //             toast({
+        //                 title: "Test Saved ✅",
+        //                 description: "Your interview test result was saved successfully.",
+        //             });
+        //         } catch (error) {
+        //             console.error("Save failed:", error);
+        //             toast({
+        //                 title: "Save Failed",
+        //                 description: "Could not save your test result.",
+        //                 variant: "destructive",
+        //             });
+        //         }
+        //     };
+
+
+        //     persistResult();
+        // }, [testPhase, currentQuestionIndex, isAnswered, userId]);
+
+        // Start test handler
+       
+        // newly added
+        if (testPhase !== "completed") return;
+
+        const persistResult = async () => {
+            try {
+                const token = await getToken();
+
+                await saveTestResult(
+                    getTestSummary(),
+                    results,
+                    token!
+                );
+
+                toast({
+                    title: "Test Saved ✅",
+                    description: "Your interview test result was saved successfully.",
+                });
+            } catch (error) {
+                console.error("Save failed:", error);
+                toast({
+                    title: "Save Failed",
+                    description: "Could not save your test result.",
+                    variant: "destructive",
+                });
+            }
+        };
+
+        persistResult();
+    }, [testPhase]);
+
+    const handleStartTest = useCallback(async () => {
         if (!selectedDomain) return;
 
-        const domainQuestionList = getQuestionsByDomain(selectedDomain);
-        if (domainQuestionList.length === 0) {
+        setTestPhase("loading");
+
+        try {
+            const domainLabel =
+                domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain;
+
+            // Generate questions using AI
+            const aiResponse = await generateInterviewQuestions(selectedDomain, domainLabel || "");
+
+            if (aiResponse.questions && aiResponse.questions.length > 0) {
+                // Add difficulty field if missing and ensure proper structure
+                const processedQuestions: Question[] = aiResponse.questions.map((q: any, index: number) => ({
+                    id: q.id || `q${index + 1}`,
+                    question: q.question,
+                    options: q.options,
+                    correctAnswer: q.correctAnswer,
+                    keywords: q.keywords || [],
+                    difficulty: q.difficulty || 'medium'
+                }));
+
+                setQuestions(processedQuestions);
+                setCurrentQuestionIndex(0);
+                setResults([]);
+                setTestPhase("testing");
+                setIsAnswered(false);
+                setIsCorrect(null);
+                setShowExplanation(false);
+                setExplanation("");
+
+                toast({
+                    title: "Test Started",
+                    description: `Good luck with your ${domainLabel} interview test! ${processedQuestions.length} questions generated.`,
+                });
+            } else {
+                throw new Error("No questions generated");
+            }
+        } catch (error) {
+            console.error("Error generating questions:", error);
+            setTestPhase("idle");
             toast({
-                title: "No Questions",
-                description: "No questions available for this domain.",
+                title: "Error",
+                description: "Failed to generate questions. Please try again.",
                 variant: "destructive",
             });
-            return;
         }
-
-        setQuestions(domainQuestionList);
-        setCurrentQuestionIndex(0);
-        setResults([]);
-        setTestPhase("testing");
-        setIsAnswered(false);
-        setIsCorrect(null);
-        setShowExplanation(false);
-        setExplanation("");
-
-        toast({
-            title: "Test Started",
-            description: `Good luck with your ${selectedDomain} interview test!`,
-        });
     }, [selectedDomain, toast]);
 
     // Answer selection with behavior-aware validation
@@ -142,7 +234,6 @@ const QuizApp = () => {
 
             setSelectedAnswer(answerIndex);
             const currentResponseTime = Date.now() - questionStartTime.current;
-
             // Check for quick answer behavior
             if (currentResponseTime < MIN_RESPONSE_TIME) {
                 // Check keyword relevance in the selected option
@@ -312,6 +403,22 @@ const QuizApp = () => {
                         onSelectDomain={setSelectedDomain}
                         onStartTest={handleStartTest}
                     />
+                )}
+
+                {/* Phase: Loading - Generating Questions */}
+                {testPhase === "loading" && (
+                    <div className="flex flex-col items-center justify-center gap-6 py-12">
+                        <div className="animate-spin">
+                            <svg className="w-12 h-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-semibold">Generating Questions</h3>
+                            <p className="text-muted-foreground mt-2">AI is preparing 30 questions for your interview test...</p>
+                        </div>
+                    </div>
                 )}
 
                 {/* Phase: Testing - Question Display */}

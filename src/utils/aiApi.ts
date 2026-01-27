@@ -123,3 +123,55 @@ Provide a clear, interview-focused explanation.`
   return await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
 }
 
+// Helper to generate 30 interview questions for a domain
+export async function generateInterviewQuestions(domain: string, domainLabel: string) {
+  const endpoint = "/v1/chat/completions";
+  const data = {
+    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert technical interviewer. Generate exactly 5 interview questions for ${domainLabel} positions.
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
+
+Return a JSON object with this exact structure:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "keywords": ["keyword1", "keyword2", "keyword3"],
+      "difficulty": "easy"
+    }
+  ]
+}
+
+Requirements:
+- Generate exactly 5 questions
+- Mix difficulties: 3 easy, 1 medium, 1 hard
+- Each question must have exactly 4 options
+- correctAnswer is 0-3 (index of correct option)
+- Include 3-5 relevant keywords for each question
+- Questions should be industry-relevant and interview-focused
+- Vary question types (conceptual, practical, best practices)`
+      },
+      {
+        role: "user",
+        content: `Generate 5 interview questions for a ${domainLabel} position. Return only valid JSON.`
+      }
+    ],
+    response_format: { type: "json_object" }
+  };
+  
+  const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  try {
+    return JSON.parse(response);
+  } catch (e) {
+    console.error("Failed to parse AI response as JSON:", response);
+    return { questions: [] };
+  }
+}
+

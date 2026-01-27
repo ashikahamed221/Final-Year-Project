@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  name      String?
+  password  String   // ✅ ADD THIS
+  createdAt DateTime @default(now())
+
+  tests Test[]
+}
+
+model Test {
+  id          String @id @default(uuid())
+  domain      String
+  score       Int
+  total       Int
+  performance String
+  avgTime     Float
+
+  // ✅ ADD THESE TWO LINES
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  questions QuestionResult[]
+
+  createdAt DateTime @default(now())
+}
+
+model QuestionResult {
+  id           String  @id @default(uuid())
+  questionId   String
+  selected     Int
+  isCorrect    Boolean
+  responseTime Int
+  warned       Boolean
+
+  testId String
+  test   Test   @relation(fields: [testId], references: [id])
+}

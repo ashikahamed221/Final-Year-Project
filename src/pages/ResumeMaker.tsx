@@ -20,7 +20,7 @@ import PersonalDetailsForm from "@/components/resume/PersonalDetailsForm";
 import EducationForm, { type Education } from "@/components/resume/EducationForm";
 import ExperienceForm, { type Experience } from "@/components/resume/ExperienceForm";
 import ProjectsForm, { type Project } from "@/components/resume/ProjectsForm";
-import SkillsForm from "@/components/resume/SkillsForm";
+import SkillsForm, { type Skills } from "@/components/resume/SkillsForm";
 import ResumePreview from "@/components/resume/ResumePreview";
 
 
@@ -42,7 +42,7 @@ const ResumeMaker = () => {
   const [education, setEducation] = useState<Education[]>([]);
   const [experience, setExperience] = useState<Experience[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [skills, setSkills] = useState({
+  const [skills, setSkills] = useState<Skills>({
     technical: "",
     soft: "",
     languages: "",
