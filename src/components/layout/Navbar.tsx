@@ -84,6 +84,8 @@ import {
   MessagesSquare,
   LogOut,
   LogIn,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -93,9 +95,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
+import { useTheme } from "@/context/ThemeContext";
 
 const Navbar = () => {
   const { signOut } = useClerk();
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -110,6 +114,21 @@ const Navbar = () => {
 
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-3">
+          {/* THEME TOGGLE */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="h-9 w-9 p-0 rounded-lg hover:bg-secondary"
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+
           {/* ASSISTANT DROPDOWN */}
           <DropdownMenu>
             <DropdownMenuTrigger className="bg-violet-700 text-white px-3 py-2 rounded-xl hover:bg-violet-600 transition">

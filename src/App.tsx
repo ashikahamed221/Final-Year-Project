@@ -187,6 +187,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 // Pages
 import Index from "./pages/Index";
@@ -204,11 +205,12 @@ const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="dark min-h-screen">
-          <Toaster />
-          <Sonner />
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className="dark min-h-screen">
+            <Toaster />
+            <Sonner />
 
           <Routes>
             {/* ================= PUBLIC ROUTES ================= */}
@@ -231,13 +233,16 @@ const App = () => {
                 </SignedOut>
               }
             />
+            
+
+            
 
             {/* ================= PROTECTED ROUTES ================= */}
             <Route
               path="/quiz-app"
               element={
                 <SignedIn>
-                  <QuizApp />
+                  <QuizApp/>
                 </SignedIn>
               }
             />
@@ -296,6 +301,7 @@ const App = () => {
         </div>
       </TooltipProvider>
     </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 
