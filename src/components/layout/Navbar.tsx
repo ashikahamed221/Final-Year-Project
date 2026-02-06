@@ -130,7 +130,7 @@ const Navbar = () => {
           </Button>
 
           {/* ASSISTANT DROPDOWN */}
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger className="bg-violet-700 text-white px-3 py-2 rounded-xl hover:bg-violet-600 transition">
               Your Assistant
             </DropdownMenuTrigger>
@@ -171,7 +171,7 @@ const Navbar = () => {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
 
           {/* AUTH BUTTONS */}
           <SignedOut>
@@ -188,15 +188,7 @@ const Navbar = () => {
           </SignedOut>
 
           <SignedIn>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              onClick={() => signOut(() => (window.location.href = "/login"))}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button> */}
+           
             <Button
               // variant="outline"
               className="bg-red-600 hover:bg-red-800 py-2 px-4"

@@ -12,6 +12,12 @@ import axios from "axios";
  */
 export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: string): Promise<any> {
   const baseUrl = "https://openrouter.ai/api";
+  
+  if (!apiKey) {
+    console.error("API Key is missing. Please check your .env file for VITE_OPENROUTER_API_KEY");
+    throw new Error("OpenRouter API key is not configured. Please add VITE_OPENROUTER_API_KEY to your .env file.");
+  }
+  
   try {
     const response = await axios.post(
       `${baseUrl}${endpoint}`,
@@ -20,8 +26,8 @@ export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: 
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin, // Optional: OpenRouter likes this for rankings
-          "X-Title": "AI Resume Analyser", // Optional: OpenRouter likes this
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "AI Resume Analyser",
         }
       }
     );
@@ -33,8 +39,24 @@ export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: 
 
     return response.data;
   } catch (error: any) {
-    console.error("OpenRouter API Error:", error.response?.data || error);
-    throw error.response?.data || error;
+    const status = error.response?.status;
+    const errorMessage = error.response?.data?.error?.message || error.message;
+    
+    console.error("OpenRouter API Error:", {
+      status,
+      message: errorMessage,
+      data: error.response?.data
+    });
+    
+    if (status === 401) {
+      throw new Error("OpenRouter API Error: Unauthorized - Your API key is invalid or expired. Please check your API key at openrouter.ai");
+    } else if (status === 429) {
+      throw new Error("OpenRouter API Error: Rate limited - Too many requests. Please try again later.");
+    } else if (status === 404) {
+      throw new Error("OpenRouter API Error: Model not found - The specified model is not available.");
+    }
+    
+    throw new Error(`OpenRouter API Error (${status}): ${errorMessage}`);
   }
 }
 

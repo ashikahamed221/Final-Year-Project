@@ -76,10 +76,10 @@ const HeroSection = () => {
           <Button
             variant="outline"
             size="lg"
-            className="border-border/50 bg-transparent hover:bg-secondary/50"
+            className="border-border/50 bg-white text-black hover:bg-secondary/50"
             asChild
           >
-            <Link to="/#features">View Features</Link>
+            <Link to="/Aifeatures">View Features</Link>
           </Button>
         </div>
 

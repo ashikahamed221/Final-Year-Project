@@ -42,45 +42,59 @@ export const MIN_RESPONSE_TIME = 3000; // 3 seconds
 // Domain questions array
 export const domainQuestions: DomainQuestion[] = [
     {
-        domain: 'javascript',
-        label: 'JavaScript',
-        description: 'Test your JavaScript knowledge',
-        icon: '📝',
+        domain: 'frontend',
+        label: 'Frontend',
+        description: 'Test your Frontend development knowledge',
+        icon: '🎨',
         questions: []
     },
     {
-        domain: 'react',
-        label: 'React',
-        description: 'Test your React knowledge',
-        icon: '⚛️',
+        domain: 'backend',
+        label: 'Backend',
+        description: 'Test your Backend development knowledge',
+        icon: '⚙️',
         questions: []
     },
     {
-        domain: 'typescript',
-        label: 'TypeScript',
-        description: 'Test your TypeScript knowledge',
-        icon: '🔷',
+        domain: 'aiml',
+        label: 'AI & ML',
+        description: 'Test your Artificial Intelligence & Machine Learning knowledge',
+        icon: '🤖',
         questions: []
     },
     {
-        domain: 'nodejs',
-        label: 'Node.js',
-        description: 'Test your Node.js knowledge',
-        icon: '🟩',
+        domain: 'dataanalyst',
+        label: 'Data Analyst',
+        description: 'Test your Data Analysis knowledge',
+        icon: '📊',
         questions: []
     },
     {
-        domain: 'sql',
-        label: 'SQL',
-        description: 'Test your SQL knowledge',
-        icon: '🗄️',
+        domain: 'devops',
+        label: 'DevOps',
+        description: 'Test your DevOps knowledge',
+        icon: '🚀',
         questions: []
     },
     {
-        domain: 'python',
-        label: 'Python',
-        description: 'Test your Python knowledge',
-        icon: '🐍',
+        domain: 'aptitude',
+        label: 'Aptitude',
+        description: 'Test your General Aptitude skills',
+        icon: '🧠',
+        questions: []
+    },
+    {
+        domain: 'coding',
+        label: 'Coding',
+        description: 'Test your Problem Solving & Coding skills',
+        icon: '💻',
+        questions: []
+    },
+    {
+        domain: 'hr',
+        label: 'HR Interview',
+        description: 'Test your HR Interview readiness',
+        icon: '👔',
         questions: []
     }
 ];

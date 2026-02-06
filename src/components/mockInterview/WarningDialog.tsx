@@ -12,9 +12,10 @@ import { AlertTriangle } from "lucide-react";
 interface WarningDialogProps {
     isOpen: boolean;
     onDismiss: () => void;
+    randomClickCount?: number;
 }
 
-const WarningDialog = ({ isOpen, onDismiss }: WarningDialogProps) => {
+const WarningDialog = ({ isOpen, onDismiss, randomClickCount = 0 }: WarningDialogProps) => {
     return (
         <AlertDialog open={isOpen} onOpenChange={(open) => !open && onDismiss()}>
             <AlertDialogContent className="bg-card border-yellow-500/30">
@@ -30,6 +31,9 @@ const WarningDialog = ({ isOpen, onDismiss }: WarningDialogProps) => {
                     <AlertDialogDescription className="text-center text-muted-foreground space-y-2">
                         <p>
                             You're answering too quickly! Take your time to read the question properly.
+                        </p>
+                        <p className="text-sm font-semibold text-yellow-500">
+                            Random Clicks: {randomClickCount}/3 - One more random click will restart the test!
                         </p>
                         <p className="text-sm">
                             In a real interview, rushing through questions can lead to mistakes.

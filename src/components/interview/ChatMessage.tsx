@@ -37,9 +37,9 @@ const ChatMessage = ({ role, content, isLoading }: ChatMessageProps) => {
             <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-            <ReactMarkdown>{content}</ReactMarkdown>
-          </p>
+          <div className="text-sm text-white whitespace-pre-wrap break-words prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown>{typeof content === "string" ? content : JSON.stringify(content)}</ReactMarkdown>
+          </div>
         )}
       </div>
     </div>

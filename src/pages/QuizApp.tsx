@@ -51,6 +51,7 @@ const QuizApp = () => {
     // Dialog states
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [showWarning, setShowWarning] = useState(false);
+    const [tabWarningCount, setTabWarningCount] = useState(0);
 
     // AI Explanation state
     const [showExplanation, setShowExplanation] = useState(false);
@@ -60,6 +61,11 @@ const QuizApp = () => {
     // Answer validation state
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [randomClickCount, setRandomClickCount] = useState(0);
+
+    // Emoji display state
+    const [showEmojiDisplay, setShowEmojiDisplay] = useState(false);
+    const [displayEmoji, setDisplayEmoji] = useState("");
 
     // Current question helper
     const currentQuestion = questions[currentQuestionIndex];
@@ -76,9 +82,6 @@ const QuizApp = () => {
                 return e.returnValue;
             };
 
-
-
-
             // Block browser back button
             window.history.pushState(null, "", window.location.href);
             const handlePopState = () => {
@@ -90,72 +93,83 @@ const QuizApp = () => {
                 });
             };
 
+            // Handle tab visibility change
+            const handleVisibilityChange = () => {
+                if (document.hidden) {
+                    // User switched to another tab
+                    const newWarningCount = tabWarningCount + 1;
+                    setTabWarningCount(newWarningCount);
+
+                    if (newWarningCount >= 2) {
+                        // Third attempt to switch tabs - restart test
+                        toast({
+                            title: "Test Restarted ⚠️",
+                            description: "You switched tabs multiple times. The test has been restarted.",
+                            variant: "destructive",
+                        });
+                        setTestPhase("idle");
+                        setSelectedDomain(null);
+                        setQuestions([]);
+                        setCurrentQuestionIndex(0);
+                        setSelectedAnswer(null);
+                        setResults([]);
+                        setIsAnswered(false);
+                        setIsCorrect(null);
+                        setShowExplanation(false);
+                        setExplanation("");
+                        setRandomClickCount(0);
+                        setTabWarningCount(0);
+                    } else {
+                        // Show warning
+                        toast({
+                            title: "Tab Switch Warning ⚠️",
+                            description: `Stay focused! Switching tabs again will restart your test. (${newWarningCount}/2)`,
+                            variant: "destructive",
+                        });
+                    }
+                }
+            };
+
             window.addEventListener("beforeunload", handleBeforeUnload);
             window.addEventListener("popstate", handlePopState);
+            document.addEventListener("visibilitychange", handleVisibilityChange);
 
             return () => {
                 window.removeEventListener("beforeunload", handleBeforeUnload);
                 window.removeEventListener("popstate", handlePopState);
+                document.removeEventListener("visibilitychange", handleVisibilityChange);
             };
         }
 
-    }, [testPhase, toast]);
+    }, [testPhase, toast, tabWarningCount]);
 
-    // Timer logic
+    // Save test results when completed
     useEffect(() => {
-        if (testPhase === "testing" && !isAnswered) {
-            questionStartTime.current = Date.now();
-            setResponseTime(0);
-
-            timerInterval.current = setInterval(() => {
-                setResponseTime(Date.now() - questionStartTime.current);
-            }, 100);
-
-            return () => {
-                if (timerInterval.current) {
-                    clearInterval(timerInterval.current);
-                }
-            };
-        }
-
-
-
-        // save to db
-        //     if (testPhase !== "completed") return;
-
-        //     const persistResult = async () => {
-        //         try {
-        //             await saveTestResult(getTestSummary(), results);
-
-        //             toast({
-        //                 title: "Test Saved ✅",
-        //                 description: "Your interview test result was saved successfully.",
-        //             });
-        //         } catch (error) {
-        //             console.error("Save failed:", error);
-        //             toast({
-        //                 title: "Save Failed",
-        //                 description: "Could not save your test result.",
-        //                 variant: "destructive",
-        //             });
-        //         }
-        //     };
-
-
-        //     persistResult();
-        // }, [testPhase, currentQuestionIndex, isAnswered, userId]);
-
-        // Start test handler
-       
-        // newly added
         if (testPhase !== "completed") return;
 
         const persistResult = async () => {
             try {
                 const token = await getToken();
 
+                // Calculate test summary inline
+                const correctAnswers = results.filter((r) => r.isCorrect).length;
+                const wrongAnswers = results.filter((r) => !r.isCorrect).length;
+                const totalResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0);
+                const avgResponseTime = results.length > 0 ? totalResponseTime / results.length : 0;
+                const percentage = (correctAnswers / results.length) * 100;
+
+                const summary: TestSummaryType = {
+                    domain:
+                        domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain || "",
+                    totalQuestions: results.length,
+                    correctAnswers,
+                    wrongAnswers,
+                    averageResponseTime: avgResponseTime,
+                    performanceLevel: calculatePerformanceLevel(percentage),
+                };
+
                 await saveTestResult(
-                    getTestSummary(),
+                    summary,
                     results,
                     token!
                 );
@@ -175,8 +189,27 @@ const QuizApp = () => {
         };
 
         persistResult();
-    }, [testPhase]);
+    }, [testPhase, getToken, toast, results, selectedDomain]);
 
+    // Timer logic
+    useEffect(() => {
+        if (testPhase === "testing" && !isAnswered) {
+            questionStartTime.current = Date.now();
+            setResponseTime(0);
+
+            timerInterval.current = setInterval(() => {
+                setResponseTime(Date.now() - questionStartTime.current);
+            }, 100);
+
+            return () => {
+                if (timerInterval.current) {
+                    clearInterval(timerInterval.current);
+                }
+            };
+        }
+    }, [testPhase, getToken, toast]);
+
+    // Start test handler
     const handleStartTest = useCallback(async () => {
         if (!selectedDomain) return;
 
@@ -234,8 +267,12 @@ const QuizApp = () => {
 
             setSelectedAnswer(answerIndex);
             const currentResponseTime = Date.now() - questionStartTime.current;
-            // Check for quick answer behavior
-            if (currentResponseTime < MIN_RESPONSE_TIME) {
+            
+            // Determine minimum response time based on question difficulty
+            const minTime = currentQuestion.difficulty === 'easy' ? 2000 : currentQuestion.difficulty === 'medium' ? 3000 : 5000;
+            
+            // Check for quick/random answer behavior
+            if (currentResponseTime < minTime) {
                 // Check keyword relevance in the selected option
                 const selectedOption = currentQuestion.options[answerIndex].toLowerCase();
                 const hasKeywordMatch = currentQuestion.keywords.some((keyword) =>
@@ -243,15 +280,42 @@ const QuizApp = () => {
                 );
 
                 if (!hasKeywordMatch) {
-                    setShowWarning(true);
-                    return;
+                    const newRandomClickCount = randomClickCount + 1;
+                    setRandomClickCount(newRandomClickCount);
+
+                    if (newRandomClickCount >= 3) {
+                        // Third random click - restart test
+                        toast({
+                            title: "Test Restarted 🔄",
+                            description: "You clicked randomly 3 times. The test has been restarted.",
+                            variant: "destructive",
+                        });
+                        // Reset test state
+                        setTestPhase("idle");
+                        setSelectedDomain(null);
+                        setQuestions([]);
+                        setCurrentQuestionIndex(0);
+                        setSelectedAnswer(null);
+                        setResults([]);
+                        setIsAnswered(false);
+                        setIsCorrect(null);
+                        setShowExplanation(false);
+                        setExplanation("");
+                        setRandomClickCount(0);
+                        setTabWarningCount(0);
+                        return;
+                    } else {
+                        // Show warning
+                        setShowWarning(true);
+                        return;
+                    }
                 }
             }
 
             // Show confirmation dialog
             setShowConfirmation(true);
         },
-        [currentQuestion, isAnswered]
+        [currentQuestion, isAnswered, randomClickCount, toast]
     );
 
     // Confirm answer handler
@@ -267,6 +331,15 @@ const QuizApp = () => {
 
         const finalResponseTime = Date.now() - questionStartTime.current;
         const correct = selectedAnswer === currentQuestion.correctAnswer;
+
+        // Display emoji feedback
+        const emoji = correct 
+            ? ['🎉', '✅', '👏', '🌟', '💯'][Math.floor(Math.random() * 5)]
+            : ['❌', '😕', '📚', '💡', '🔄'][Math.floor(Math.random() * 5)];
+        
+        setDisplayEmoji(emoji);
+        setShowEmojiDisplay(true);
+        setTimeout(() => setShowEmojiDisplay(false), 1500);
 
         // Record result
         const result: TestResult = {
@@ -368,6 +441,9 @@ const QuizApp = () => {
         setIsCorrect(null);
         setShowExplanation(false);
         setExplanation("");
+        setRandomClickCount(0);
+        setTabWarningCount(0);
+        setShowEmojiDisplay(false);
     }, []);
 
     // Warning dismiss handler
@@ -424,6 +500,15 @@ const QuizApp = () => {
                 {/* Phase: Testing - Question Display */}
                 {testPhase === "testing" && currentQuestion && (
                     <div className="space-y-6">
+                        {/* Emoji Display Overlay */}
+                        {showEmojiDisplay && (
+                            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+                                <div className="text-9xl animate-bounce">
+                                    {displayEmoji}
+                                </div>
+                            </div>
+                        )}
+
                         <QuestionCard
                             question={currentQuestion}
                             questionNumber={currentQuestionIndex + 1}
@@ -474,6 +559,7 @@ const QuizApp = () => {
             <WarningDialog
                 isOpen={showWarning}
                 onDismiss={handleDismissWarning}
+                randomClickCount={randomClickCount}
             />
         </div>
     );

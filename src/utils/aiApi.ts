@@ -53,7 +53,7 @@ export async function generateInterviewResponse(messages: { role: string; conten
   const endpoint = "/v1/chat/completions";
   const data = {
     // model: "nvidia/nemotron-3-nano-30b-a3b:free",
-    model: "google/gemma-3-27b-it:free",
+    model: "nvidia/nemotron-nano-9b-v2:free",
     messages: [
       {
         role: "system",
@@ -99,7 +99,7 @@ export async function generateQuestionExplanation(
 ): Promise<string> {
   const endpoint = "/v1/chat/completions";
   const data = {
-    model: "google/gemma-3-27b-it:free",
+    model: "tngtech/deepseek-r1t-chimera:free",
     messages: [
       {
         role: "system",
