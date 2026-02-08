@@ -130,7 +130,7 @@ const Navbar = () => {
           </Button>
 
           {/* ASSISTANT DROPDOWN */}
-          {/* <DropdownMenu>
+          <DropdownMenu>
             <DropdownMenuTrigger className="bg-violet-700 text-white px-3 py-2 rounded-xl hover:bg-violet-600 transition">
               Your Assistant
             </DropdownMenuTrigger>
@@ -171,7 +171,7 @@ const Navbar = () => {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu> */}
+          </DropdownMenu>
 
           {/* AUTH BUTTONS */}
           <SignedOut>
