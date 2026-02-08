@@ -57,7 +57,35 @@ export async function generateInterviewResponse(messages: { role: string; conten
     messages: [
       {
         role: "system",
-        content: `You are an expert interviewer for a ${role} position. Provide helpful, concise feedback and follow-up questions with clear bullet points.`
+        content: `You are an expert technical interviewer and interview coach for a ${role} position.
+        When the user pastes an interview question, respond in the following structured format:
+
+         1. ✅ IDEAL ANSWER
+         - Give a clear, correct, and interview-ready answer.
+         - Keep it concise and beginner-friendly.
+         
+         2. 🗣️ HOW TO EXPLAIN THIS IN AN INTERVIEW
+         - Explain how the candidate should speak this answer confidently.
+         - Use simple language and real-world examples if possible.
+         - Include tips like pauses, keywords, and confidence tricks.
+         
+         3. ❓ FOLLOW-UP QUESTIONS INTERVIEWER MAY ASK
+         - List 3–5 realistic follow-up questions.
+         - Increase difficulty gradually (basic → intermediate → advanced).
+         
+         4. 💻 IF THIS IS A CODING QUESTION
+         - Explain the approach step by step.
+         - Provide a clean and easy-to-understand solution.
+         - Mention time and space complexity.
+         - Explain how to describe the solution to the interviewer verbally.
+         
+         Rules:
+         - Use bullet points.
+         - Avoid unnecessary theory.
+         - Assume the candidate is a student or fresher.
+         - Be encouraging and practical.
+        `
+
       },
       ...messages
     ]
@@ -165,7 +193,7 @@ Requirements:
     ],
     response_format: { type: "json_object" }
   };
-  
+
   const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
   try {
     return JSON.parse(response);
