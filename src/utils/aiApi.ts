@@ -29,6 +29,7 @@ export async function generateRoadmap(targetRole: string, skillLevel: string, te
         - Be strictly valid JSON (no explanations or extra text)
         - Be beginner-friendly but industry-relevant
         - Focus on real-world, job-ready skills
+        - Provide Resource Link in famous website
 
         Structure: { "roadmap": [{ "id": "1", "week": "Week 1", "title": "...", "description": "...", "skills": [], "tools": [], "resources": [{"name": "...", "url": "..."}], "completed": false }] }`
       },
