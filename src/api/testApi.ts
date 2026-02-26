@@ -36,7 +36,7 @@ export function saveTestResult(
   results: any[],
   token: string
 ) {
-  return fetch("http://localhost:5000/save-test", {
+  return fetch(`${import.meta.env.VITE_API_URL}/save-test`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -48,7 +48,7 @@ export function saveTestResult(
 
 
 export async function getUserTests(userId: string) {
-  return fetch(`http://localhost:5000/user-tests/${userId}`, {
+  return fetch(`${import.meta.env.VITE_API_URL}/user-tests/${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
