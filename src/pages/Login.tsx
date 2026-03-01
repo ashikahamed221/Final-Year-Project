@@ -1,11 +1,7 @@
-import { SignIn } from "@clerk/clerk-react";
+import LoginForm from "@/components/auth/LoginForm";
 
 const Login = () => {
-  return (
-    <div style={{ display: "flex", justifyContent: "center", marginTop: 80 }}>
-      <SignIn routing="path" path="/login" />
-    </div>
-  );
+  return <LoginForm />;
 };
 
 export default Login;

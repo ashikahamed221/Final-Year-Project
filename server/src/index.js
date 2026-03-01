@@ -101,8 +101,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { prisma } from "./prisma.js";
-import { clerkAuth } from "./clerkMiddleware.js";
+import { authMiddleware } from "./authMiddleware.js";
 
 dotenv.config();
 
@@ -116,17 +118,94 @@ app.use(cors({
 
 app.use(express.json());
 
-// Save test
-app.post("/save-test", clerkAuth, async (req, res) => {
+// Auth endpoints
+app.post('/api/register', async (req, res) => {
   try {
-    const { summary, results, userId } = req.body;
+    const { name, email, password } = req.body;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword
+      },
+      select: { id: true, name: true, email: true }
+    });
+
+    // Create token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({ user, token });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    // Create token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      user: { id: user.id, name: user.name, email: user.email },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Save test
+app.post("/save-test", authMiddleware, async (req, res) => {
+  try {
+    const { summary, results } = req.body;
+    const userId = req.user.id;
+
+    console.log("✅ Saving test for user:", req.user);
 
     if (userId) {
-      await prisma.user.upsert({
-        where: { id: userId },
-        update: {},
-        create: { id: userId },
-      });
+      // User already exists since we're using authMiddleware
     }
 
     const test = await prisma.test.create({

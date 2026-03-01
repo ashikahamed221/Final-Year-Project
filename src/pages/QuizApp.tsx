@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
+import { useAuth } from "@/context/AuthContext";
 
 // Components
 import DomainSelector from "@/components/mockInterview/DomainSelector";
@@ -17,13 +17,11 @@ import {
     domainQuestions,
     calculatePerformanceLevel,
     MIN_RESPONSE_TIME,
-    Question,
-    TestResult,
-    TestSummary as TestSummaryType,
 } from "@/data/mockInterviewData";
 import { generateQuestionExplanation, generateInterviewQuestions } from "@/utils/aiApi";
+import { Question, TestResult, TestSummary as TestSummaryType } from "@/data/mockInterviewData";
 import { saveTestResult } from "@/api/testApi";
-import { useAuth } from "@clerk/clerk-react";
+
 
 type TestPhase = "idle" | "loading" | "testing" | "completed";
 
@@ -31,9 +29,8 @@ const QuizApp = () => {
     const { toast } = useToast();
 
     // Auth state
-    // const [userId, setUserId] = useState<string | null>(null);
-    const { getToken } = useAuth();
-
+    const { user, token } = useAuth();
+    const userId = user?.id;
 
     // Test state
     const [testPhase, setTestPhase] = useState<TestPhase>("idle");
@@ -149,7 +146,9 @@ const QuizApp = () => {
 
         const persistResult = async () => {
             try {
-                const token = await getToken();
+                if (!token || !userId) {
+                    throw new Error('User not authenticated');
+                }
 
                 // Calculate test summary inline
                 const correctAnswers = results.filter((r) => r.isCorrect).length;
@@ -171,7 +170,8 @@ const QuizApp = () => {
                 await saveTestResult(
                     summary,
                     results,
-                    token!
+                    token!,
+                    userId
                 );
 
                 toast({
@@ -189,7 +189,7 @@ const QuizApp = () => {
         };
 
         persistResult();
-    }, [testPhase, getToken, toast, results, selectedDomain]);
+    }, [testPhase, token, userId, toast, results, selectedDomain]);
 
     // Timer logic
     useEffect(() => {
@@ -207,7 +207,7 @@ const QuizApp = () => {
                 }
             };
         }
-    }, [testPhase, getToken, toast]);
+    }, [testPhase, toast]);
 
     // Start test handler
     const handleStartTest = useCallback(async () => {

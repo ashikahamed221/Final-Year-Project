@@ -94,11 +94,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 
 const Navbar = () => {
-  const { signOut } = useClerk();
+  const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
   return (
@@ -174,30 +174,28 @@ const Navbar = () => {
           </DropdownMenu>
 
           {/* AUTH BUTTONS */}
-          <SignedOut>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login" className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
-                Login
-              </Link>
-            </Button>
+          {!user ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Link>
+              </Button>
 
-            <Button size="sm" className="bg-primary hover:bg-primary/90" asChild>
-              <Link to="/register">Register</Link>
-            </Button>
-          </SignedOut>
-
-          <SignedIn>
-           
+              <Button size="sm" className="bg-primary hover:bg-primary/90" asChild>
+                <Link to="/register">Register</Link>
+              </Button>
+            </>
+          ) : (
             <Button
-              // variant="outline"
               className="bg-red-600 hover:bg-red-800 py-2 px-4"
               size="sm"
-              onClick={() => signOut({ redirectUrl: "/login" })}
+              onClick={() => logout()}
             >
               Logout
             </Button>
-          </SignedIn>
+          )}
         </div>
       </div>
     </nav>

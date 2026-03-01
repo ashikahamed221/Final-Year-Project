@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 // Pages
 import Index from "./pages/Index";
@@ -22,6 +22,16 @@ import Features from "./components/landing/Features";
 const queryClient = new QueryClient();
 
 const App = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
@@ -36,20 +46,12 @@ const App = () => {
 
             <Route
               path="/login"
-              element={
-                <SignedOut>
-                  <Login />
-                </SignedOut>
-              }
+              element={!user ? <Login /> : <Navigate to="/quiz-app" replace />}
             />
 
             <Route
               path="/register"
-              element={
-                <SignedOut>
-                  <Register />
-                </SignedOut>
-              }
+              element={!user ? <Register /> : <Navigate to="/quiz-app" replace />}
             />
             
 
@@ -58,47 +60,27 @@ const App = () => {
             {/* ================= PROTECTED ROUTES ================= */}
             <Route
               path="/quiz-app"
-              element={
-                <SignedIn>
-                  <QuizApp/>
-                </SignedIn>
-              }
+              element={user ? <QuizApp/> : <Navigate to="/login" replace />}
             />
 
             <Route
               path="/cover-letter"
-              element={
-                <SignedIn>
-                  <CoverLetterGenerator />
-                </SignedIn>
-              }
+              element={user ? <CoverLetterGenerator /> : <Navigate to="/login" replace />}
             />
 
             <Route
               path="/resume-maker"
-              element={
-                <SignedIn>
-                  <ResumeMaker />
-                </SignedIn>
-              }
+              element={user ? <ResumeMaker /> : <Navigate to="/login" replace />}
             />
 
             <Route
               path="/career-roadmap"
-              element={
-                <SignedIn>
-                  <CareerRoadmap />
-                </SignedIn>
-              }
+              element={user ? <CareerRoadmap /> : <Navigate to="/login" replace />}
             />
 
             <Route
               path="/interview-prep"
-              element={
-                <SignedIn>
-                  <InterviewPrep />
-                </SignedIn>
-              }
+              element={user ? <InterviewPrep /> : <Navigate to="/login" replace />}
             />
 
             <Route
@@ -112,12 +94,11 @@ const App = () => {
               path="*"
               element={
                 <>
-                  <SignedIn>
+                  {user ? (
                     <Navigate to="/" replace />
-                  </SignedIn>
-                  <SignedOut>
+                  ) : (
                     <Navigate to="/login" replace />
-                  </SignedOut>
+                  )}
                 </>
               }
             />
