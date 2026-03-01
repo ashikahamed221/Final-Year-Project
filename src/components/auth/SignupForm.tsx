@@ -43,7 +43,7 @@ const SignupForm: React.FC = () => {
 
     try {
       await registerUser(data.name, data.email, data.password);
-      navigate('/quiz-app');
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
     } finally {

@@ -111,7 +111,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: ["https://final-year-project-iota-seven.vercel.app"],
+  origin: ["http://localhost:5173",],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));

@@ -38,7 +38,7 @@ const LoginForm: React.FC = () => {
 
     try {
       await login(data.email, data.password);
-      navigate('/quiz-app');
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
