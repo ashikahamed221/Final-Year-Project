@@ -1,13 +1,13 @@
 import { Content } from "vaul";
-import { callOpenRouterAPI } from "../lib/utils";
+import { callGroqAPI } from "../lib/utils";
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
 
 // Helper to generate career roadmap
 export async function generateRoadmap(targetRole: string, skillLevel: string, techStack: string) {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    model: "nvidia/nemotron-nano-9b-v2:free",
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
@@ -40,7 +40,7 @@ export async function generateRoadmap(targetRole: string, skillLevel: string, te
     ],
     response_format: { type: "json_object" }
   };
-  const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
   try {
     return JSON.parse(response);
   } catch (e) {
@@ -51,10 +51,9 @@ export async function generateRoadmap(targetRole: string, skillLevel: string, te
 
 // Helper for interview practice
 export async function generateInterviewResponse(messages: { role: string; content: string }[], role: string) {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    // model: "nvidia/nemotron-3-nano-30b-a3b:free",
-    model: "nvidia/nemotron-nano-9b-v2:free",
+    model: "llama-3.1-8b-instant",
     messages: [
       {
         role: "system",
@@ -91,7 +90,7 @@ export async function generateInterviewResponse(messages: { role: string; conten
       ...messages
     ]
   };
-  return await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
 }
 
 // Helper for cover letter generation
@@ -101,9 +100,9 @@ export async function generateCoverLetter(jobDetails: {
   description: string;
   skills: string;
 }) {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
@@ -117,7 +116,7 @@ export async function generateCoverLetter(jobDetails: {
       }
     ]
   };
-  return await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
 }
 
 // Helper for mock interview question explanations
@@ -126,9 +125,9 @@ export async function generateQuestionExplanation(
   correctAnswer: string,
   domain: string
 ): Promise<string> {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    model: "llama-3.1-8b-instant",
     messages: [
       {
         role: "system",
@@ -149,7 +148,7 @@ Provide a clear, interview-focused explanation.`
       }
     ]
   };
-  return await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
 }
 
 // Helper to build context-aware prompt based on domain/round type
@@ -254,9 +253,9 @@ Requirements:
 // Helper to generate interview questions for a domain
 export async function generateInterviewQuestions(domain: string, domainLabel: string) {
   const { system, user } = getInterviewPromptContext(domain, domainLabel);
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    model: "llama-3.3-70b-versatile",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -264,7 +263,7 @@ export async function generateInterviewQuestions(domain: string, domainLabel: st
     response_format: { type: "json_object" }
   };
 
-  const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+  const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
   try {
     return JSON.parse(response);
   } catch (e) {
@@ -275,9 +274,9 @@ export async function generateInterviewQuestions(domain: string, domainLabel: st
 
 // Helper to analyze resume and extract information
 export async function analyzeResume(resumeContent: string) {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   const data = {
-    model: "anthropic/claude-3.7-sonnet",
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
@@ -329,7 +328,7 @@ Return only valid JSON with the structure specified.`
   };
 
   try {
-    const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
     return JSON.parse(response);
   } catch (e) {
     console.error("Failed to parse resume analysis response as JSON:", e);
@@ -347,7 +346,7 @@ Return only valid JSON with the structure specified.`
 
 // Helper to generate project-based interview questions
 export async function generateProjectBasedQuestions(resumeAnalysis: any) {
-  const endpoint = "/v1/chat/completions";
+  const endpoint = "/openai/v1/chat/completions";
   
   const projectsList = resumeAnalysis.projects.map((p: any) => 
     `- ${p.name}: ${p.description} (Tech: ${p.technologies.join(', ')})`
@@ -356,7 +355,7 @@ export async function generateProjectBasedQuestions(resumeAnalysis: any) {
   const skillsList = resumeAnalysis.suggestedFocusAreas.join(', ');
 
   const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
@@ -403,7 +402,7 @@ Return only valid JSON with the structure specified.`
   };
 
   try {
-    const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
     return JSON.parse(response);
   } catch (e) {
     console.error("Failed to parse project questions response as JSON:", e);

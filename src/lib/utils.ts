@@ -4,18 +4,18 @@ import { twMerge } from "tailwind-merge";
 import axios from "axios";
 
 /**
- * Sends a request to the OpenRouter API.
- * @param {string} endpoint - The OpenRouter API endpoint (e.g., "/v1/chat/completions").
+ * Sends a request to the Groq API.
+ * @param {string} endpoint - The Groq API endpoint (e.g., "/openai/v1/chat/completions").
  * @param {object} data - The request payload.
- * @param {string} apiKey - Your OpenRouter API key.
+ * @param {string} apiKey - Your Groq API key.
  * @returns {Promise<any>} - The API response data.
  */
-export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: string): Promise<any> {
-  const baseUrl = "https://openrouter.ai/api";
+export async function callGroqAPI(endpoint: string, data: object, apiKey: string): Promise<any> {
+  const baseUrl = "https://api.groq.com";
   
   if (!apiKey) {
-    console.error("API Key is missing. Please check your .env file for VITE_OPENROUTER_API_KEY");
-    throw new Error("OpenRouter API key is not configured. Please add VITE_OPENROUTER_API_KEY to your .env file.");
+    console.error("API Key is missing. Please check your .env file for VITE_GROQ_API_KEY");
+    throw new Error("Groq API key is not configured. Please add VITE_GROQ_API_KEY to your .env file.");
   }
   
   try {
@@ -26,13 +26,11 @@ export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: 
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "AI Resume Analyser",
         }
       }
     );
 
-    // Check if the response matches OpenRouter's structure
+    // Check if the response matches OpenAI's structure (which Groq also uses)
     if (response.data?.choices?.[0]?.message?.content) {
       return response.data.choices[0].message.content;
     }
@@ -42,25 +40,26 @@ export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: 
     const status = error.response?.status;
     const errorMessage = error.response?.data?.error?.message || error.message;
     
-    console.error("OpenRouter API Error:", {
+    console.error("Groq API Error:", {
       status,
       message: errorMessage,
       data: error.response?.data
     });
     
     if (status === 401) {
-      throw new Error("OpenRouter API Error: Unauthorized - Your API key is invalid or expired. Please check your API key at openrouter.ai");
-    } else if (status === 402) {
-      throw new Error("OpenRouter API Error: Insufficient credits - You've run out of credits. Please upgrade your account at https://openrouter.ai/settings/credits");
+      throw new Error("Groq API Error: Unauthorized - Your API key is invalid or expired. Please check your API key at console.groq.com");
     } else if (status === 429) {
-      throw new Error("OpenRouter API Error: Rate limited - Too many requests. Please try again later.");
+      throw new Error("Groq API Error: Rate limited - Too many requests. Please try again later.");
     } else if (status === 404) {
-      throw new Error("OpenRouter API Error: Model not found - The specified model is not available.");
+      throw new Error("Groq API Error: Model not found - The specified model is not available.");
     }
     
-    throw new Error(`OpenRouter API Error (${status}): ${errorMessage}`);
+    throw new Error(`Groq API Error (${status}): ${errorMessage}`);
   }
 }
+
+// Backward compatibility alias
+export const callOpenRouterAPI = callGroqAPI;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
