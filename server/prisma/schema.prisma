@@ -11,7 +11,7 @@ model User {
   id        String   @id @default(uuid())
   email     String?  @unique
   name      String?
-  password  String   // ✅ ADD THIS
+  password  String // ✅ ADD THIS
   createdAt DateTime @default(now())
 
   tests Test[]

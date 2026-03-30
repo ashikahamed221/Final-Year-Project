@@ -23,7 +23,6 @@ import ProjectsForm, { type Project } from "@/components/resume/ProjectsForm";
 import SkillsForm, { type Skills } from "@/components/resume/SkillsForm";
 import ResumePreview from "@/components/resume/ResumePreview";
 
-
 const ResumeMaker = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +46,7 @@ const ResumeMaker = () => {
     soft: "",
     languages: "",
     certifications: "",
+    tools: "",
   });
   const [summary, setSummary] = useState("");
 

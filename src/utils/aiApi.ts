@@ -7,7 +7,7 @@ const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 export async function generateRoadmap(targetRole: string, skillLevel: string, techStack: string) {
   const endpoint = "/v1/chat/completions";
   const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    model: "nvidia/nemotron-nano-9b-v2:free",
     messages: [
       {
         role: "system",
@@ -128,7 +128,7 @@ export async function generateQuestionExplanation(
 ): Promise<string> {
   const endpoint = "/v1/chat/completions";
   const data = {
-    model: "tngtech/deepseek-r1t-chimera:free",
+    model: "nvidia/nemotron-3-nano-30b-a3b:free",
     messages: [
       {
         role: "system",
@@ -152,15 +152,18 @@ Provide a clear, interview-focused explanation.`
   return await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
 }
 
-// Helper to generate 30 interview questions for a domain
-export async function generateInterviewQuestions(domain: string, domainLabel: string) {
-  const endpoint = "/v1/chat/completions";
-  const data = {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert technical interviewer. Generate exactly 5 interview questions for ${domainLabel} positions.
+// Helper to build context-aware prompt based on domain/round type
+function getInterviewPromptContext(domain: string, domainLabel: string): { system: string; user: string } {
+  // Round 1: Aptitude
+  if (domain.startsWith("aptitude-")) {
+    const typeMap: Record<string, string> = {
+      "aptitude-quantitative": "quantitative aptitude (math, percentages, ratios, speed, time, algebra)",
+      "aptitude-logical": "logical reasoning (patterns, sequences, deductions, syllogisms)",
+      "aptitude-verbal": "verbal ability (English grammar, vocabulary, comprehension, analogies)",
+    };
+    const focus = typeMap[domain] || "aptitude";
+    return {
+      system: `You are an expert aptitude test designer. Generate exactly 5 MCQ questions for ${focus}.
 
 IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
 
@@ -181,16 +184,82 @@ Return a JSON object with this exact structure:
 Requirements:
 - Generate exactly 5 questions
 - Mix difficulties: 3 easy, 1 medium, 1 hard
-- Each question must have exactly 4 options
-- correctAnswer is 0-3 (index of correct option)
+- Each question must have exactly 4 options; correctAnswer is 0-3 (index)
 - Include 3-5 relevant keywords for each question
-- Questions should be industry-relevant and interview-focused
-- Vary question types (conceptual, practical, best practices)`
-      },
-      {
-        role: "user",
-        content: `Generate 5 interview questions for a ${domainLabel} position. Return only valid JSON.`
-      }
+- Questions should match placement/competitive exam style`,
+      user: `Generate 5 aptitude questions for ${domainLabel}. Return only valid JSON.`,
+    };
+  }
+
+  // Round 2: General Tech (most asked across companies)
+  if (domain === "tech-general") {
+    return {
+      system: `You are an expert technical interviewer. Generate exactly 5 MCQ questions that are the MOST FREQUENTLY ASKED technical interview questions across all companies (FAANG, startups, product companies).
+
+Include: OOP, DSA basics, databases, networks, OS, system design basics, coding best practices.
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown, no backticks.
+
+Return: { "questions": [{ "id": "q1", "question": "...", "options": ["A","B","C","D"], "correctAnswer": 0, "keywords": [], "difficulty": "easy" }] }
+
+Requirements: 5 questions, mix difficulties, 4 options each, correctAnswer 0-3, 3-5 keywords per question.`,
+      user: `Generate 5 most-asked general tech interview questions. Return only valid JSON.`,
+    };
+  }
+
+  // Round 4: HR
+  if (domain === "hr") {
+    return {
+      system: `You are an expert HR interviewer. Generate exactly 5 MCQ questions based on the MOST FREQUENTLY ASKED HR/behavioral interview questions (Tell me about yourself, strengths, weaknesses, conflict resolution, teamwork, leadership, etc.).
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown, no backticks.
+
+Return: { "questions": [{ "id": "q1", "question": "...", "options": ["A","B","C","D"], "correctAnswer": 0, "keywords": [], "difficulty": "easy" }] }
+
+Requirements: 5 questions, mix difficulties, 4 options each, correctAnswer 0-3, 3-5 keywords per question.`,
+      user: `Generate 5 most-asked HR interview questions. Return only valid JSON.`,
+    };
+  }
+
+  // Round 3: Domain-specific tech (frontend, backend, dataanalyst, aiml, devops)
+  return {
+    system: `You are an expert technical interviewer for ${domainLabel} positions. Generate exactly 5 MCQ interview questions for ${domainLabel} roles.
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
+
+Return a JSON object with this exact structure:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "keywords": ["keyword1", "keyword2", "keyword3"],
+      "difficulty": "easy"
+    }
+  ]
+}
+
+Requirements:
+- Generate exactly 5 questions
+- Mix difficulties: 3 easy, 1 medium, 1 hard
+- Each question must have exactly 4 options; correctAnswer is 0-3 (index)
+- Include 3-5 relevant keywords for each question
+- Questions should be industry-relevant and interview-focused`,
+    user: `Generate 5 interview questions for a ${domainLabel} position. Return only valid JSON.`,
+  };
+}
+
+// Helper to generate interview questions for a domain
+export async function generateInterviewQuestions(domain: string, domainLabel: string) {
+  const { system, user } = getInterviewPromptContext(domain, domainLabel);
+  const endpoint = "/v1/chat/completions";
+  const data = {
+    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
     ],
     response_format: { type: "json_object" }
   };
@@ -200,6 +269,144 @@ Requirements:
     return JSON.parse(response);
   } catch (e) {
     console.error("Failed to parse AI response as JSON:", response);
+    return { questions: [] };
+  }
+}
+
+// Helper to analyze resume and extract information
+export async function analyzeResume(resumeContent: string) {
+  const endpoint = "/v1/chat/completions";
+  const data = {
+    model: "anthropic/claude-3.7-sonnet",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert career counselor and resume analyst. Analyze the provided resume and return a detailed JSON analysis.
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
+
+Return a JSON object with this exact structure:
+{
+  "overallFeedback": "Summary of the resume",
+  "strengths": ["strength1", "strength2", "strength3"],
+  "areasToImprove": ["area1", "area2", "area3"],
+  "missingSkills": ["skill1", "skill2"],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Brief description",
+      "technologies": ["tech1", "tech2"]
+    }
+  ],
+  "internships": [
+    {
+      "company": "Company Name",
+      "role": "Role Title",
+      "duration": "Duration",
+      "description": "Brief description"
+    }
+  ],
+  "suggestedFocusAreas": ["area1", "area2", "area3", "area4"]
+}
+
+Requirements:
+- Extract all projects mentioned in the resume
+- Extract all internship/work experience
+- Identify key skills and technologies
+- Provide constructive feedback on areas for improvement
+- Suggest 4 focus areas for interview preparation based on the resume`
+      },
+      {
+        role: "user",
+        content: `Please analyze this resume and provide detailed feedback:
+
+${resumeContent}
+
+Return only valid JSON with the structure specified.`
+      }
+    ],
+    response_format: { type: "json_object" }
+  };
+
+  try {
+    const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+    return JSON.parse(response);
+  } catch (e) {
+    console.error("Failed to parse resume analysis response as JSON:", e);
+    return {
+      overallFeedback: "Analysis in progress...",
+      strengths: ["Technical skills", "Project experience", "Problem-solving ability"],
+      areasToImprove: ["Communication", "Leadership experience", "System design knowledge"],
+      missingSkills: ["Cloud platforms", "Advanced frameworks"],
+      projects: [],
+      internships: [],
+      suggestedFocusAreas: ["Core Programming Concepts", "Data Structures & Algorithms", "System Design", "Behavioral Questions"]
+    };
+  }
+}
+
+// Helper to generate project-based interview questions
+export async function generateProjectBasedQuestions(resumeAnalysis: any) {
+  const endpoint = "/v1/chat/completions";
+  
+  const projectsList = resumeAnalysis.projects.map((p: any) => 
+    `- ${p.name}: ${p.description} (Tech: ${p.technologies.join(', ')})`
+  ).join('\n');
+  
+  const skillsList = resumeAnalysis.suggestedFocusAreas.join(', ');
+
+  const data = {
+    model: "nvidia/nemotron-3-nano-30b-a3b:free",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert technical interviewer. Generate exactly 5 MCQ questions based on the candidate's projects and mentioned experience.
+
+IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
+
+Return a JSON object with this exact structure:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "keywords": ["keyword1", "keyword2", "keyword3"],
+      "difficulty": "easy"
+    }
+  ]
+}
+
+Requirements:
+- Generate exactly 5 questions
+- Mix difficulties: 3 easy, 1 medium, 1 hard
+- Each question must have exactly 4 options; correctAnswer is 0-3 (index)
+- Include 3-5 relevant keywords for each question
+- Questions should be based on the candidate's specific projects and technologies
+- Ask about design decisions, technical challenges, and implementation details`
+      },
+      {
+        role: "user",
+        content: `Generate 5 interview questions based on these candidate projects and skill areas:
+
+Projects:
+${projectsList}
+
+Key Skills to ask about:
+${skillsList}
+
+Return only valid JSON with the structure specified.`
+      }
+    ],
+    response_format: { type: "json_object" }
+  };
+
+  try {
+    const response = await callOpenRouterAPI(endpoint, data, OPENROUTER_API_KEY);
+    return JSON.parse(response);
+  } catch (e) {
+    console.error("Failed to parse project questions response as JSON:", e);
     return { questions: [] };
   }
 }

@@ -55,6 +55,15 @@ const features: Feature[] = [
     bgColor: "bg-pink-100",
     link: "/resume-maker",
   },
+  {
+    icon: FileUser,
+    title: "Profile History",
+    description:
+      "View your mock interview results and test history in your personal profile.",
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-100",
+    link: "/history",
+  },
 ];
 
 const FeaturesSection = () => {

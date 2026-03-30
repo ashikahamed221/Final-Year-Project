@@ -18,10 +18,12 @@ export function saveTestResult(
 
 
 export async function getUserTests(userId: string) {
+  
   return fetch(`http://localhost:5000/user-tests/${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
-  }).then((res) => res.json());
+  }).then((res) => console.log(res.json()));
+  console.log
 }

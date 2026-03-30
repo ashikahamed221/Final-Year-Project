@@ -5,25 +5,33 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
-// Components
 import DomainSelector from "@/components/mockInterview/DomainSelector";
 import QuestionCard from "@/components/mockInterview/QuestionCard";
 import ConfirmationDialog from "@/components/mockInterview/ConfirmationDialog";
 import WarningDialog from "@/components/mockInterview/WarningDialog";
 import TestSummary from "@/components/mockInterview/TestSummary";
+import ResumeUploadForm from "@/components/mockInterview/ResumeUploadForm";
+import ResumeAnalysisFeedback from "@/components/mockInterview/ResumeAnalysisFeedback";
 
 // Data and utilities
 import {
     domainQuestions,
+    interviewRounds,
     calculatePerformanceLevel,
     MIN_RESPONSE_TIME,
+    resumeBasedInterviewParts,
+    ResumeAnalysis,
 } from "@/data/mockInterviewData";
-import { generateQuestionExplanation, generateInterviewQuestions } from "@/utils/aiApi";
+import { 
+    generateQuestionExplanation, 
+    generateInterviewQuestions,
+    generateProjectBasedQuestions,
+    analyzeResume 
+} from "@/utils/aiApi";
 import { Question, TestResult, TestSummary as TestSummaryType } from "@/data/mockInterviewData";
 import { saveTestResult } from "@/api/testApi";
 
-
-type TestPhase = "idle" | "loading" | "testing" | "completed";
+type TestPhase = "resume-upload" | "resume-analysis" | "part-selection" | "idle" | "loading" | "testing" | "completed";
 
 const QuizApp = () => {
     const { toast } = useToast();
@@ -32,18 +40,29 @@ const QuizApp = () => {
     const { user, token } = useAuth();
     const userId = user?.id;
 
-    // Test state
-    const [testPhase, setTestPhase] = useState<TestPhase>("idle");
+    // Resume state
+    const [resumeAnalysis, setResumeAnalysis] = useState<ResumeAnalysis | null>(null);
+    const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [resumeContent, setResumeContent] = useState<string>("");
+    const [isAnalyzingResume, setIsAnalyzingResume] = useState(false);
+
+    // Interview state
+    const [testPhase, setTestPhase] = useState<TestPhase>("resume-upload");
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+    const [selectedPart, setSelectedPart] = useState<number>(0); // Current interview part (0-3)
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [results, setResults] = useState<TestResult[]>([]);
+    const [allPartsResults, setAllPartsResults] = useState<TestResult[][]>([]); // Results for all 4 parts
 
     // Timer state
     const [responseTime, setResponseTime] = useState(0);
     const questionStartTime = useRef<number>(Date.now());
-    const timerInterval = useRef<NodeJS.Timeout | null>(null);
+    const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [interviewType, setInterviewType] = useState<string>("");
+    const [subCategory, setSubCategory] = useState<string>("");
+    const [difficulty, setDifficulty] = useState<string>("");
 
     // Dialog states
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -58,7 +77,6 @@ const QuizApp = () => {
     // Answer validation state
     const [isAnswered, setIsAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-    const [randomClickCount, setRandomClickCount] = useState(0);
 
     // Emoji display state
     const [showEmojiDisplay, setShowEmojiDisplay] = useState(false);
@@ -66,6 +84,60 @@ const QuizApp = () => {
 
     // Current question helper
     const currentQuestion = questions[currentQuestionIndex];
+
+    // Handle resume file upload
+    const handleResumeUpload = useCallback(async (file: File) => {
+        try {
+            setIsAnalyzingResume(true);
+            setResumeFile(file);
+
+            // Read file content
+            const text = await file.text();
+            setResumeContent(text);
+
+            // Analyze resume using AI
+            const analysis = await analyzeResume(text);
+            setResumeAnalysis(analysis);
+            setTestPhase("resume-analysis");
+
+            toast({
+                title: "Resume Analyzed ✓",
+                description: "Your resume has been analyzed. Review the feedback below.",
+            });
+        } catch (error: any) {
+            console.error("Resume upload error:", error);
+            
+            // Check for specific error types
+            let errorTitle = "Analysis Error";
+            let errorDescription = "Failed to analyze resume. Please try again.";
+            
+            if (error.message?.includes("402") || error.message?.includes("insufficient credits")) {
+                errorTitle = "Insufficient Credits";
+                errorDescription = "You've run out of API credits. Please upgrade your account to continue.";
+            } else if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+                errorTitle = "API Key Error";
+                errorDescription = "There's an issue with the API configuration. Please contact support.";
+            } else if (error.message?.includes("429") || error.message?.includes("Rate limited")) {
+                errorTitle = "Rate Limited";
+                errorDescription = "Too many requests. Please wait a moment and try again.";
+            }
+            
+            toast({
+                title: errorTitle,
+                description: errorDescription,
+                variant: "destructive",
+            });
+        } finally {
+            setIsAnalyzingResume(false);
+        }
+    }, [toast]);
+
+    // Handle start interview after resume analysis
+    const handleStartInterview = useCallback(() => {
+        setTestPhase("part-selection");
+        setSelectedPart(0);
+        setAllPartsResults([[], [], [], []]); // Initialize results for 4 parts
+    }, []);
 
     // Get user from auth client on mount
 
@@ -98,14 +170,13 @@ const QuizApp = () => {
                     setTabWarningCount(newWarningCount);
 
                     if (newWarningCount >= 2) {
-                        // Third attempt to switch tabs - restart test
                         toast({
                             title: "Test Restarted ⚠️",
                             description: "You switched tabs multiple times. The test has been restarted.",
                             variant: "destructive",
                         });
-                        setTestPhase("idle");
-                        setSelectedDomain(null);
+                        setTestPhase("part-selection");
+                        setSelectedPart(0);
                         setQuestions([]);
                         setCurrentQuestionIndex(0);
                         setSelectedAnswer(null);
@@ -114,7 +185,7 @@ const QuizApp = () => {
                         setIsCorrect(null);
                         setShowExplanation(false);
                         setExplanation("");
-                        setRandomClickCount(0);
+        
                         setTabWarningCount(0);
                     } else {
                         // Show warning
@@ -140,56 +211,56 @@ const QuizApp = () => {
 
     }, [testPhase, toast, tabWarningCount]);
 
-    // Save test results when completed
+    // Save test results when a part is completed
     useEffect(() => {
         if (testPhase !== "completed") return;
 
-        const persistResult = async () => {
+        const persistResults = async () => {
             try {
                 if (!token || !userId) {
                     throw new Error('User not authenticated');
                 }
 
-                // Calculate test summary inline
-                const correctAnswers = results.filter((r) => r.isCorrect).length;
-                const wrongAnswers = results.filter((r) => !r.isCorrect).length;
-                const totalResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0);
-                const avgResponseTime = results.length > 0 ? totalResponseTime / results.length : 0;
-                const percentage = (correctAnswers / results.length) * 100;
+                // Save results for all 4 parts
+                for (let i = 0; i < allPartsResults.length; i++) {
+                    const partResults = allPartsResults[i];
+                    if (partResults.length === 0) continue;
 
-                const summary: TestSummaryType = {
-                    domain:
-                        domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain || "",
-                    totalQuestions: results.length,
-                    correctAnswers,
-                    wrongAnswers,
-                    averageResponseTime: avgResponseTime,
-                    performanceLevel: calculatePerformanceLevel(percentage),
-                };
+                    const correctAnswers = partResults.filter((r) => r.isCorrect).length;
+                    const wrongAnswers = partResults.filter((r) => !r.isCorrect).length;
+                    const totalResponseTime = partResults.reduce((sum, r) => sum + r.responseTime, 0);
+                    const avgResponseTime = partResults.length > 0 ? totalResponseTime / partResults.length : 0;
+                    const percentage = (correctAnswers / partResults.length) * 100;
 
-                await saveTestResult(
-                    summary,
-                    results,
-                    token!,
-                    userId
-                );
+                    const partName = resumeBasedInterviewParts[i].title;
+                    const summary: TestSummaryType = {
+                        domain: partName,
+                        totalQuestions: partResults.length,
+                        correctAnswers,
+                        wrongAnswers,
+                        averageResponseTime: avgResponseTime,
+                        performanceLevel: calculatePerformanceLevel(percentage),
+                    };
+
+                    await saveTestResult(summary, partResults, token!, userId);
+                }
 
                 toast({
-                    title: "Test Saved ✅",
-                    description: "Your interview test result was saved successfully.",
+                    title: "Results Saved ✅",
+                    description: "Your interview results have been saved successfully.",
                 });
             } catch (error) {
                 console.error("Save failed:", error);
                 toast({
                     title: "Save Failed",
-                    description: "Could not save your test result.",
+                    description: "Could not save your results.",
                     variant: "destructive",
                 });
             }
         };
 
-        persistResult();
-    }, [testPhase, token, userId, toast, results, selectedDomain]);
+        persistResults();
+    }, [testPhase, token, userId, allPartsResults, toast]);
 
     // Timer logic
     useEffect(() => {
@@ -207,23 +278,26 @@ const QuizApp = () => {
                 }
             };
         }
-    }, [testPhase, toast]);
+    }, [testPhase, isAnswered]);
 
-    // Start test handler
-    const handleStartTest = useCallback(async () => {
-        if (!selectedDomain) return;
-
+    // Generate questions for the current interview part
+    const generateQuestionsForPart = useCallback(async () => {
+        const part = resumeBasedInterviewParts[selectedPart];
         setTestPhase("loading");
 
         try {
-            const domainLabel =
-                domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain;
+            let aiResponse;
 
-            // Generate questions using AI
-            const aiResponse = await generateInterviewQuestions(selectedDomain, domainLabel || "");
+            // If it's project-skills part, generate questions based on resume
+            if (part.domain === "project-skills" && resumeAnalysis) {
+                aiResponse = await generateProjectBasedQuestions(resumeAnalysis);
+            } else {
+                let domain = part.domain;
+                let domainLabel = part.title;
+                aiResponse = await generateInterviewQuestions(domain, domainLabel);
+            }
 
             if (aiResponse.questions && aiResponse.questions.length > 0) {
-                // Add difficulty field if missing and ensure proper structure
                 const processedQuestions: Question[] = aiResponse.questions.map((q: any, index: number) => ({
                     id: q.id || `q${index + 1}`,
                     question: q.question,
@@ -243,79 +317,37 @@ const QuizApp = () => {
                 setExplanation("");
 
                 toast({
-                    title: "Test Started",
-                    description: `Good luck with your ${domainLabel} interview test! ${processedQuestions.length} questions generated.`,
+                    title: `${part.title} - Questions Generated`,
+                    description: `${processedQuestions.length} questions ready for this part.`,
                 });
             } else {
                 throw new Error("No questions generated");
             }
         } catch (error) {
             console.error("Error generating questions:", error);
-            setTestPhase("idle");
+            setTestPhase("part-selection");
             toast({
                 title: "Error",
                 description: "Failed to generate questions. Please try again.",
                 variant: "destructive",
             });
         }
-    }, [selectedDomain, toast]);
+    }, [selectedPart, resumeAnalysis, toast]);
 
-    // Answer selection with behavior-aware validation
+    // Handle start test for a part
+    const handleStartTest = useCallback(() => {
+        generateQuestionsForPart();
+    }, [generateQuestionsForPart]);
+
+    // Answer selection
     const handleSelectAnswer = useCallback(
         (answerIndex: number) => {
             if (isAnswered) return;
 
             setSelectedAnswer(answerIndex);
-            const currentResponseTime = Date.now() - questionStartTime.current;
-            
-            // Determine minimum response time based on question difficulty
-            const minTime = currentQuestion.difficulty === 'easy' ? 2000 : currentQuestion.difficulty === 'medium' ? 3000 : 5000;
-            
-            // Check for quick/random answer behavior
-            if (currentResponseTime < minTime) {
-                // Check keyword relevance in the selected option
-                const selectedOption = currentQuestion.options[answerIndex].toLowerCase();
-                const hasKeywordMatch = currentQuestion.keywords.some((keyword) =>
-                    selectedOption.includes(keyword.toLowerCase())
-                );
-
-                if (!hasKeywordMatch) {
-                    const newRandomClickCount = randomClickCount + 1;
-                    setRandomClickCount(newRandomClickCount);
-
-                    if (newRandomClickCount >= 3) {
-                        // Third random click - restart test
-                        toast({
-                            title: "Test Restarted 🔄",
-                            description: "You clicked randomly 3 times. The test has been restarted.",
-                            variant: "destructive",
-                        });
-                        // Reset test state
-                        setTestPhase("idle");
-                        setSelectedDomain(null);
-                        setQuestions([]);
-                        setCurrentQuestionIndex(0);
-                        setSelectedAnswer(null);
-                        setResults([]);
-                        setIsAnswered(false);
-                        setIsCorrect(null);
-                        setShowExplanation(false);
-                        setExplanation("");
-                        setRandomClickCount(0);
-                        setTabWarningCount(0);
-                        return;
-                    } else {
-                        // Show warning
-                        setShowWarning(true);
-                        return;
-                    }
-                }
-            }
-
-            // Show confirmation dialog
             setShowConfirmation(true);
         },
-        [currentQuestion, isAnswered, randomClickCount, toast]
+        [isAnswered]
     );
 
     // Confirm answer handler
@@ -363,7 +395,7 @@ const QuizApp = () => {
         });
     }, [selectedAnswer, currentQuestion, showWarning, toast]);
 
-    // Move to next question
+    // Move to next question or next part
     const handleNextQuestion = useCallback(() => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex((prev) => prev + 1);
@@ -373,10 +405,33 @@ const QuizApp = () => {
             setShowExplanation(false);
             setExplanation("");
         } else {
-            // Test completed
-            setTestPhase("completed");
+            // This part is complete, save results and move to next part or finish
+            const newAllPartsResults = [...allPartsResults];
+            newAllPartsResults[selectedPart] = results;
+            setAllPartsResults(newAllPartsResults);
+
+            if (selectedPart < resumeBasedInterviewParts.length - 1) {
+                // Move to next part
+                setSelectedPart((prev) => prev + 1);
+                setTestPhase("part-selection");
+                setQuestions([]);
+                setCurrentQuestionIndex(0);
+                setSelectedAnswer(null);
+                setResults([]);
+                setIsAnswered(false);
+                setIsCorrect(null);
+                setShowExplanation(false);
+                setExplanation("");
+                toast({
+                    title: `Part ${selectedPart + 1} Complete ✓`,
+                    description: `Moving to Part ${selectedPart + 2}: ${resumeBasedInterviewParts[selectedPart + 1].title}`,
+                });
+            } else {
+                // All parts complete
+                setTestPhase("completed");
+            }
         }
-    }, [currentQuestionIndex, questions.length]);
+    }, [currentQuestionIndex, questions.length, selectedPart, results, allPartsResults, toast]);
 
     // Generate AI explanation
     const handleToggleExplanation = useCallback(async () => {
@@ -385,12 +440,11 @@ const QuizApp = () => {
             setIsLoadingExplanation(true);
 
             try {
-                const domainLabel =
-                    domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain;
+                const part = resumeBasedInterviewParts[selectedPart];
                 const aiExplanation = await generateQuestionExplanation(
                     currentQuestion.question,
                     currentQuestion.options[currentQuestion.correctAnswer],
-                    domainLabel || ""
+                    part.title
                 );
                 setExplanation(aiExplanation);
             } catch (error) {
@@ -408,42 +462,68 @@ const QuizApp = () => {
         } else {
             setShowExplanation(!showExplanation);
         }
-    }, [showExplanation, explanation, currentQuestion, selectedDomain, toast]);
+    }, [showExplanation, explanation, currentQuestion, selectedPart, toast]);
 
-    // Calculate test summary
-    const getTestSummary = useCallback((): TestSummaryType => {
-        const correctAnswers = results.filter((r) => r.isCorrect).length;
-        const wrongAnswers = results.filter((r) => !r.isCorrect).length;
-        const totalResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0);
-        const avgResponseTime = results.length > 0 ? totalResponseTime / results.length : 0;
-        const percentage = (correctAnswers / results.length) * 100;
+    // Get test summary for completed interview
+    const getInterviewSummary = useCallback(() => {
+        const summaries = allPartsResults.map((partResults, idx) => {
+            if (partResults.length === 0) return null;
 
-        return {
-            domain:
-                domainQuestions.find((d) => d.domain === selectedDomain)?.label || selectedDomain || "",
-            totalQuestions: results.length,
-            correctAnswers,
-            wrongAnswers,
-            averageResponseTime: avgResponseTime,
-            performanceLevel: calculatePerformanceLevel(percentage),
-        };
-    }, [results, selectedDomain]);
+            const correctAnswers = partResults.filter((r) => r.isCorrect).length;
+            const wrongAnswers = partResults.filter((r) => !r.isCorrect).length;
+            const totalResponseTime = partResults.reduce((sum, r) => sum + r.responseTime, 0);
+            const avgResponseTime = partResults.length > 0 ? totalResponseTime / partResults.length : 0;
+            const percentage = (correctAnswers / partResults.length) * 100;
 
-    // Retry test handler
+            return {
+                part: resumeBasedInterviewParts[idx].title,
+                domain: resumeBasedInterviewParts[idx].domain,
+                totalQuestions: partResults.length,
+                correctAnswers,
+                wrongAnswers,
+                averageResponseTime: avgResponseTime,
+                performanceLevel: calculatePerformanceLevel(percentage),
+                percentage,
+            };
+        }).filter(Boolean);
+
+        return summaries;
+    }, [allPartsResults]);
+
+    // Retry interview (restart from part 1)
     const handleRetry = useCallback(() => {
-        setTestPhase("idle");
-        setSelectedDomain(null);
+        setTestPhase("part-selection");
+        setSelectedPart(0);
         setQuestions([]);
         setCurrentQuestionIndex(0);
         setSelectedAnswer(null);
         setResults([]);
+        setAllPartsResults([[], [], [], []]);
         setIsAnswered(false);
         setIsCorrect(null);
         setShowExplanation(false);
         setExplanation("");
-        setRandomClickCount(0);
         setTabWarningCount(0);
         setShowEmojiDisplay(false);
+    }, []);
+
+    // Start new interview (upload new resume)
+    const handleStartNewInterview = useCallback(() => {
+        setTestPhase("resume-upload");
+        setResumeAnalysis(null);
+        setResumeFile(null);
+        setResumeContent("");
+        setSelectedPart(0);
+        setQuestions([]);
+        setCurrentQuestionIndex(0);
+        setSelectedAnswer(null);
+        setResults([]);
+        setAllPartsResults([[], [], [], []]);
+        setIsAnswered(false);
+        setIsCorrect(null);
+        setShowExplanation(false);
+        setExplanation("");
+        setTabWarningCount(0);
     }, []);
 
     // Warning dismiss handler
@@ -460,7 +540,7 @@ const QuizApp = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header - only show when not in test */}
+            {/* Header */}
             {testPhase !== "testing" && (
                 <div className="p-5">
                     <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -471,17 +551,79 @@ const QuizApp = () => {
             )}
 
             <div className="container max-w-4xl mx-auto px-4 py-8">
-                {/* Phase: Idle - Domain Selection */}
-                {testPhase === "idle" && (
-                    <DomainSelector
-                        domains={domainQuestions}
-                        selectedDomain={selectedDomain}
-                        onSelectDomain={setSelectedDomain}
-                        onStartTest={handleStartTest}
+                {/* Phase: Resume Upload */}
+                {testPhase === "resume-upload" && (
+                    <ResumeUploadForm
+                        onUpload={handleResumeUpload}
+                        isLoading={isAnalyzingResume}
                     />
                 )}
 
-                {/* Phase: Loading - Generating Questions */}
+                {/* Phase: Resume Analysis */}
+                {testPhase === "resume-analysis" && resumeAnalysis && (
+                    <ResumeAnalysisFeedback
+                        analysis={resumeAnalysis}
+                        onStartInterview={handleStartInterview}
+                        isLoading={false}
+                    />
+                )}
+
+                {/* Phase: Interview Part Selection */}
+                {testPhase === "part-selection" && (
+                    <div className="space-y-6">
+                        <div className="text-center space-y-4">
+                            <div className="inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 backdrop-blur-sm">
+                                <span className="text-4xl">📋</span>
+                            </div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                                {resumeBasedInterviewParts[selectedPart].title}
+                            </h1>
+                            <p className="text-muted-foreground max-w-md mx-auto">
+                                {resumeBasedInterviewParts[selectedPart].description}
+                            </p>
+                            <div className="text-sm text-muted-foreground">
+                                Part {selectedPart + 1} of {resumeBasedInterviewParts.length}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 justify-center">
+                            <Button
+                                onClick={handleStartTest}
+                                size="lg"
+                                className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+                            >
+                                Start {resumeBasedInterviewParts[selectedPart].title}
+                            </Button>
+                            {selectedPart > 0 && (
+                                <Button
+                                    onClick={() => setSelectedPart(selectedPart - 1)}
+                                    variant="outline"
+                                    size="lg"
+                                >
+                                    ← Previous Part
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Progress indicator */}
+                        <div className="flex gap-2 justify-center">
+                            {resumeBasedInterviewParts.map((_, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`h-2 w-8 rounded-full transition-all ${
+                                        idx === selectedPart
+                                            ? 'bg-primary'
+                                            : idx < selectedPart
+                                            ? 'bg-green-500'
+                                            : 'bg-secondary'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Phase: Loading */}
                 {testPhase === "loading" && (
                     <div className="flex flex-col items-center justify-center gap-6 py-12">
                         <div className="animate-spin">
@@ -492,15 +634,14 @@ const QuizApp = () => {
                         </div>
                         <div className="text-center">
                             <h3 className="text-xl font-semibold">Generating Questions</h3>
-                            <p className="text-muted-foreground mt-2">AI is preparing 30 questions for your interview test...</p>
+                            <p className="text-muted-foreground mt-2">AI is generating questions for {resumeBasedInterviewParts[selectedPart].title}...</p>
                         </div>
                     </div>
                 )}
 
-                {/* Phase: Testing - Question Display */}
+                {/* Phase: Testing */}
                 {testPhase === "testing" && currentQuestion && (
                     <div className="space-y-6">
-                        {/* Emoji Display Overlay */}
                         {showEmojiDisplay && (
                             <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
                                 <div className="text-9xl animate-bounce">
@@ -524,7 +665,6 @@ const QuizApp = () => {
                             isCorrect={isCorrect}
                         />
 
-                        {/* Next/Finish Button */}
                         {isAnswered && (
                             <div className="flex justify-end">
                                 <Button
@@ -532,20 +672,82 @@ const QuizApp = () => {
                                     onClick={handleNextQuestion}
                                     className="px-8 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
                                 >
-                                    {currentQuestionIndex < questions.length - 1 ? "Next Question →" : "View Results"}
+                                    {currentQuestionIndex < questions.length - 1 
+                                        ? "Next Question →" 
+                                        : selectedPart < resumeBasedInterviewParts.length - 1
+                                        ? "Next Part →"
+                                        : "View Results"
+                                    }
                                 </Button>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Phase: Completed - Test Summary */}
+                {/* Phase: Completed */}
                 {testPhase === "completed" && (
-                    <TestSummary
-                        summary={getTestSummary()}
-                        results={results}
-                        onRetry={handleRetry}
-                    />
+                    <div className="space-y-6">
+                        <div className="text-center space-y-4">
+                            <div className="inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
+                                <span className="text-4xl">🎉</span>
+                            </div>
+                            <h1 className="text-3xl font-bold">Interview Complete!</h1>
+                            <p className="text-muted-foreground">Here's your comprehensive performance summary</p>
+                        </div>
+
+                        {/* Summary for all parts */}
+                        <div className="space-y-4">
+                            {getInterviewSummary().map((summary, idx) => (
+                                <div key={idx} className="p-6 border border-border bg-card rounded-lg space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="font-semibold text-lg">{summary.part}</h3>
+                                        <span className="text-2xl text-primary font-bold">{summary.percentage.toFixed(1)}%</span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground">Correct</p>
+                                            <p className="font-semibold text-green-600">{summary.correctAnswers}/{summary.totalQuestions}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Wrong</p>
+                                            <p className="font-semibold text-red-600">{summary.wrongAnswers}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Avg Time</p>
+                                            <p className="font-semibold">{(summary.averageResponseTime / 1000).toFixed(1)}s</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Level</p>
+                                            <p className="font-semibold">{summary.performanceLevel}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4 justify-center pt-6">
+                            <Button
+                                onClick={handleRetry}
+                                variant="outline"
+                                size="lg"
+                            >
+                                Retry Interview
+                            </Button>
+                            <Button
+                                onClick={handleStartNewInterview}
+                                size="lg"
+                                className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+                            >
+                                New Interview (New Resume)
+                            </Button>
+                            <Link to="/">
+                                <Button variant="outline" size="lg">
+                                    Back to Home
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
                 )}
             </div>
 
@@ -559,7 +761,7 @@ const QuizApp = () => {
             <WarningDialog
                 isOpen={showWarning}
                 onDismiss={handleDismissWarning}
-                randomClickCount={randomClickCount}
+                
             />
         </div>
     );

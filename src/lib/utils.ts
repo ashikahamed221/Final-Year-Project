@@ -50,6 +50,8 @@ export async function callOpenRouterAPI(endpoint: string, data: object, apiKey: 
     
     if (status === 401) {
       throw new Error("OpenRouter API Error: Unauthorized - Your API key is invalid or expired. Please check your API key at openrouter.ai");
+    } else if (status === 402) {
+      throw new Error("OpenRouter API Error: Insufficient credits - You've run out of credits. Please upgrade your account at https://openrouter.ai/settings/credits");
     } else if (status === 429) {
       throw new Error("OpenRouter API Error: Rate limited - Too many requests. Please try again later.");
     } else if (status === 404) {

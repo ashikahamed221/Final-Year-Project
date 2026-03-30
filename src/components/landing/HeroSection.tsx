@@ -54,8 +54,8 @@ const HeroSection = () => {
           className="mx-auto mt-6 max-w-2xl text-lg text-center text-muted-foreground opacity-0 animate-fade-in-up sm:text-xl"
           style={{ animationDelay: "0.3s" }}
         >
-          Generate stunning cover letters, build professional resumes, ace
-          interviews, and optimize your LinkedIn profile — all powered by
+          Generate stunning cover letters, build professional resumes, AI 
+          Mock interview, AI Roadmap Generater,all powered by
           advanced AI.
         </p>
 
