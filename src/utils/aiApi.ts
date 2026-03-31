@@ -37,14 +37,14 @@ export async function generateRoadmap(targetRole: string, skillLevel: string, te
         role: "user",
         content: `Create a 12-week roadmap for a ${skillLevel} ${targetRole} using ${techStack}.`
       }
-    ],
-    response_format: { type: "json_object" }
+    ]
   };
-  const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+  
   try {
-    return JSON.parse(response);
+    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    return extractJSON(response);
   } catch (e) {
-    console.error("Failed to parse AI response as JSON:", response);
+    console.error("Failed to parse AI response as JSON:", e);
     return { roadmap: [] };
   }
 }
@@ -259,20 +259,56 @@ export async function generateInterviewQuestions(domain: string, domainLabel: st
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
-    ],
-    response_format: { type: "json_object" }
+    ]
   };
 
-  const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
   try {
-    return JSON.parse(response);
+    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    const parsed = extractJSON(response);
+    
+    // Validate questions format
+    if (parsed.questions && Array.isArray(parsed.questions)) {
+      return parsed;
+    }
+    
+    throw new Error("Invalid questions response structure");
   } catch (e) {
-    console.error("Failed to parse AI response as JSON:", response);
+    console.error("Failed to parse AI response as JSON:", e);
     return { questions: [] };
   }
 }
 
 // Helper to analyze resume and extract information
+// Helper function to extract JSON from response (handles markdown code blocks)
+function extractJSON(response: string): any {
+  try {
+    // Try parsing directly first
+    return JSON.parse(response);
+  } catch (e) {
+    // Try removing markdown code blocks
+    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1].trim());
+      } catch (e2) {
+        console.error("Failed to parse JSON from markdown block:", e2);
+      }
+    }
+    
+    // Try finding JSON object pattern
+    const objectMatch = response.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      try {
+        return JSON.parse(objectMatch[0]);
+      } catch (e3) {
+        console.error("Failed to parse JSON from object match:", e3);
+      }
+    }
+    
+    throw e;
+  }
+}
+
 export async function analyzeResume(resumeContent: string) {
   const endpoint = "/openai/v1/chat/completions";
   const data = {
@@ -280,63 +316,69 @@ export async function analyzeResume(resumeContent: string) {
     messages: [
       {
         role: "system",
-        content: `You are an expert career counselor and resume analyst. Analyze the provided resume and return a detailed JSON analysis.
+        content: `You are an expert career counselor and resume analyst. Analyze the provided resume carefully and return ONLY a valid JSON object (no markdown, no code blocks, no extra text).
 
-IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
-
-Return a JSON object with this exact structure:
+Return exactly this JSON structure:
 {
-  "overallFeedback": "Summary of the resume",
+  "overallFeedback": "2-3 sentence summary of the resume quality and key strengths",
   "strengths": ["strength1", "strength2", "strength3"],
   "areasToImprove": ["area1", "area2", "area3"],
   "missingSkills": ["skill1", "skill2"],
   "projects": [
     {
       "name": "Project Name",
-      "description": "Brief description",
-      "technologies": ["tech1", "tech2"]
+      "description": "Brief description of what the project does",
+      "technologies": ["tech1", "tech2", "tech3"]
     }
   ],
   "internships": [
     {
       "company": "Company Name",
-      "role": "Role Title",
-      "duration": "Duration",
-      "description": "Brief description"
+      "role": "Job Title",
+      "duration": "Duration e.g., Jan 2023 - Jun 2023",
+      "description": "Brief description of responsibilities"
     }
   ],
-  "suggestedFocusAreas": ["area1", "area2", "area3", "area4"]
+  "suggestedFocusAreas": ["focus1", "focus2", "focus3", "focus4"]
 }
 
-Requirements:
-- Extract all projects mentioned in the resume
-- Extract all internship/work experience
-- Identify key skills and technologies
-- Provide constructive feedback on areas for improvement
-- Suggest 4 focus areas for interview preparation based on the resume`
+IMPORTANT:
+- Extract ALL projects and work experience mentioned
+- Include at least 3 strengths and 3 areas to improve
+- Suggest 4 specific interview focus areas based on the resume content
+- Return ONLY valid JSON, nothing else`
       },
       {
         role: "user",
-        content: `Please analyze this resume and provide detailed feedback:
+        content: `Analyze this resume and return valid JSON:
 
-${resumeContent}
-
-Return only valid JSON with the structure specified.`
+${resumeContent}`
       }
-    ],
-    response_format: { type: "json_object" }
+    ]
   };
 
   try {
     const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
-    return JSON.parse(response);
+    const parsed = extractJSON(response);
+    
+    // Ensure all required fields exist
+    return {
+      overallFeedback: parsed.overallFeedback || "Resume analyzed successfully",
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : ["Technical skills", "Project experience"],
+      areasToImprove: Array.isArray(parsed.areasToImprove) ? parsed.areasToImprove : ["Communication", "Documentation"],
+      missingSkills: Array.isArray(parsed.missingSkills) ? parsed.missingSkills : [],
+      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+      internships: Array.isArray(parsed.internships) ? parsed.internships : [],
+      suggestedFocusAreas: Array.isArray(parsed.suggestedFocusAreas) ? parsed.suggestedFocusAreas : ["Core Programming Concepts", "Data Structures & Algorithms", "System Design", "Behavioral Questions"]
+    };
   } catch (e) {
     console.error("Failed to parse resume analysis response as JSON:", e);
+    // Return comprehensive default analysis
     return {
-      overallFeedback: "Analysis in progress...",
-      strengths: ["Technical skills", "Project experience", "Problem-solving ability"],
-      areasToImprove: ["Communication", "Leadership experience", "System design knowledge"],
-      missingSkills: ["Cloud platforms", "Advanced frameworks"],
+      overallFeedback: "Resume uploaded successfully. We'll generate interview questions based on your profile.",
+      strengths: ["Technical foundation", "Demonstrated experience", "Project involvement"],
+      areasToImprove: ["Technical depth", "System design knowledge", "Communication skills"],
+      missingSkills: ["Advanced frameworks", "Cloud technologies"],
       projects: [],
       internships: [],
       suggestedFocusAreas: ["Core Programming Concepts", "Data Structures & Algorithms", "System Design", "Behavioral Questions"]
@@ -348,30 +390,36 @@ Return only valid JSON with the structure specified.`
 export async function generateProjectBasedQuestions(resumeAnalysis: any) {
   const endpoint = "/openai/v1/chat/completions";
   
-  const projectsList = resumeAnalysis.projects.map((p: any) => 
-    `- ${p.name}: ${p.description} (Tech: ${p.technologies.join(', ')})`
-  ).join('\n');
+  // Create projects list - include projects or use focus areas as fallback
+  let projectsList = "";
+  if (resumeAnalysis.projects && Array.isArray(resumeAnalysis.projects) && resumeAnalysis.projects.length > 0) {
+    projectsList = resumeAnalysis.projects.map((p: any) => 
+      `- ${p.name}: ${p.description} (Technologies: ${p.technologies?.join(', ') || 'various'})`
+    ).join('\n');
+  } else {
+    projectsList = "No specific projects provided in resume. Generate questions based on common technologies and scenarios.";
+  }
   
-  const skillsList = resumeAnalysis.suggestedFocusAreas.join(', ');
+  const skillsList = (resumeAnalysis.suggestedFocusAreas && Array.isArray(resumeAnalysis.suggestedFocusAreas)) 
+    ? resumeAnalysis.suggestedFocusAreas.join(', ')
+    : "Core Programming, Data Structures, Problem Solving";
 
   const data = {
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `You are an expert technical interviewer. Generate exactly 5 MCQ questions based on the candidate's projects and mentioned experience.
+        content: `You are an expert technical interviewer. Generate exactly 5 MCQ questions focused on projects, skills, and technical concepts.
 
-IMPORTANT: You MUST return ONLY valid JSON with no markdown formatting, no backticks, and no extra text.
-
-Return a JSON object with this exact structure:
+Return ONLY valid JSON (no markdown, no code blocks). Use this exact structure:
 {
   "questions": [
     {
       "id": "q1",
-      "question": "Question text here?",
+      "question": "Question text?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
-      "keywords": ["keyword1", "keyword2", "keyword3"],
+      "keywords": ["keyword1", "keyword2"],
       "difficulty": "easy"
     }
   ]
@@ -380,30 +428,45 @@ Return a JSON object with this exact structure:
 Requirements:
 - Generate exactly 5 questions
 - Mix difficulties: 3 easy, 1 medium, 1 hard
-- Each question must have exactly 4 options; correctAnswer is 0-3 (index)
-- Include 3-5 relevant keywords for each question
-- Questions should be based on the candidate's specific projects and technologies
-- Ask about design decisions, technical challenges, and implementation details`
+- Each question must have exactly 4 options
+- correctAnswer must be 0-3 (the index of the correct option)
+- Questions should test understanding of technical concepts and best practices
+- Be practical and relevant to actual development work`
       },
       {
         role: "user",
-        content: `Generate 5 interview questions based on these candidate projects and skill areas:
+        content: `Generate 5 interview questions based on these experience areas:
 
-Projects:
+Project Experience:
 ${projectsList}
 
-Key Skills to ask about:
+Key Skills to Focus On:
 ${skillsList}
 
-Return only valid JSON with the structure specified.`
+Return only valid JSON.`
       }
-    ],
-    response_format: { type: "json_object" }
+    ]
   };
 
   try {
     const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
-    return JSON.parse(response);
+    const parsed = extractJSON(response);
+    
+    // Validate and ensure proper structure
+    if (parsed.questions && Array.isArray(parsed.questions)) {
+      const questions = parsed.questions.map((q: any, idx: number) => ({
+        id: q.id || `q${idx + 1}`,
+        question: q.question || "Question",
+        options: Array.isArray(q.options) ? q.options : ["Option A", "Option B", "Option C", "Option D"],
+        correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < 4 ? q.correctAnswer : 0,
+        keywords: Array.isArray(q.keywords) ? q.keywords : [],
+        difficulty: q.difficulty || "medium"
+      }));
+      
+      return { questions };
+    }
+    
+    throw new Error("Invalid response structure");
   } catch (e) {
     console.error("Failed to parse project questions response as JSON:", e);
     return { questions: [] };

@@ -140,12 +140,19 @@ import {
   Moon,
   Sun,
   LayoutDashboard,
+  LogOut,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useState, useEffect } from "react";
 import { getUserStats } from "@/services/api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -198,26 +205,35 @@ const Navbar = () => {
 
           {/* AUTH SECTION */}
           {!user ? (
-            <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/login" className="flex items-center gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Link>
-              </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Get Started
+                </Button>
+              </DropdownMenuTrigger>
 
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                asChild
-              >
-                <Link to="/register">Register</Link>
-              </Button>
-            </>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem asChild>
+                  <Link to="/login" className="flex items-center gap-2">
+                    <LogIn className="h-4 w-4" />
+                    Login
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link to="/register" className="flex items-center gap-2">
+                    Sign Up
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               {/* STATS DISPLAY */}
-              {stats && (
+              {/* {stats && (
                 <div className="flex items-center gap-4 px-3 py-2 rounded-lg bg-secondary/50">
                   <div className="text-sm">
                     <p className="font-semibold">{stats.testsCompleted || 0}</p>
@@ -229,28 +245,34 @@ const Navbar = () => {
                     <p className="text-xs text-muted-foreground">Avg Score</p>
                   </div>
                 </div>
-              )}
+              )} */}
 
-              {/* DASHBOARD BUTTON */}
-              <Button
-                size="sm"
-                className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
-                asChild
-              >
-                <Link to="/dashboard" className="flex items-center gap-2">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
+              {/* DASHBOARD DROPDOWN */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </DropdownMenuTrigger>
 
-              {/* LOGOUT BUTTON */}
-              <Button
-                className="bg-red-600 hover:bg-red-800 py-2 px-4"
-                size="sm"
-                onClick={handleLogout}
-              >
-                Logout
-              </Button>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600">
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
