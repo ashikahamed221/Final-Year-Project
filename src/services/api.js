@@ -23,7 +23,7 @@
 
 //   return res.json();
 // };
-const API_URL = "http://localhost:5000";
+const API_URL = "https://ai-backend-r57w.onrender.com";
 
 export const getUserTests = async () => {
   const token = localStorage.getItem("token");

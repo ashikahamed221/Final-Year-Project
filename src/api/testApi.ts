@@ -6,7 +6,8 @@ export function saveTestResult(
   token: string,
   userId: string,
 ) {
-  return fetch(`http://localhost:5000/save-test`, {
+  // http://localhost:5000/save-test
+  return fetch(`https://ai-backend-r57w.onrender.com/save-test`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -19,7 +20,7 @@ export function saveTestResult(
 
 export async function getUserTests(userId: string) {
   
-  return fetch(`http://localhost:5000/user-tests/${userId}`, {
+  return fetch(`https://ai-backend-r57w.onrender.com/user-tests/${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

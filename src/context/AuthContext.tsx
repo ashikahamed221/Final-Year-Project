@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/login', {
+      const response = await axios.post('https://ai-backend-r57w.onrender.com/api/login', {
         email,
         password
       });
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/register', {
+      const response = await axios.post('https://ai-backend-r57w.onrender.com/api/register', {
         name,
         email,
         password
