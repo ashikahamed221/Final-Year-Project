@@ -3,6 +3,7 @@ import {
   Map,
   MessageSquare,
   FileUser,
+  Code2,
   LucideIcon,
   BookOpenCheck,
   ArrowUpRight,
@@ -63,6 +64,15 @@ const features: Feature[] = [
     color: "text-yellow-600",
     bgColor: "bg-yellow-100",
     link: "/history",
+  },
+  {
+    icon: Code2,
+    title: "Coding Prep Round",
+    description:
+      "Take coding tests with an in-browser editor and submit your solution in JavaScript, Python, or Java.",
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-100",
+    link: "/coding-prep-round",
   },
 ];
 

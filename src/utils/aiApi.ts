@@ -93,32 +93,6 @@ export async function generateInterviewResponse(messages: { role: string; conten
   return await callGroqAPI(endpoint, data, GROQ_API_KEY);
 }
 
-// Helper for cover letter generation
-export async function generateCoverLetter(jobDetails: {
-  role: string;
-  company: string;
-  description: string;
-  skills: string;
-}) {
-  const endpoint = "/openai/v1/chat/completions";
-  const data = {
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content: "You are a professional resume writer specializing in ATS-friendly cover letters."
-      },
-      {
-        role: "user",
-        content: `Generate a tailored cover letter for a ${jobDetails.role} position at ${jobDetails.company}.
-        Job Description: ${jobDetails.description}
-        My Skills: ${jobDetails.skills}`
-      }
-    ]
-  };
-  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
-}
-
 // Helper for mock interview question explanations
 export async function generateQuestionExplanation(
   question: string,
@@ -309,50 +283,67 @@ function extractJSON(response: string): any {
   }
 }
 
-export async function analyzeResume(resumeContent: string) {
+// AI Code Evaluator - Evaluates and provides feedback on code
+export async function evaluateCode(
+  code: string,
+  language: string,
+  description?: string
+) {
   const endpoint = "/openai/v1/chat/completions";
   const data = {
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `You are an expert career counselor and resume analyst. Analyze the provided resume carefully and return ONLY a valid JSON object (no markdown, no code blocks, no extra text).
+        content: `You are an expert code reviewer and software engineer. Analyze the provided ${language} code and provide comprehensive feedback in valid JSON format (no markdown, no code blocks).
 
 Return exactly this JSON structure:
 {
-  "overallFeedback": "2-3 sentence summary of the resume quality and key strengths",
-  "strengths": ["strength1", "strength2", "strength3"],
-  "areasToImprove": ["area1", "area2", "area3"],
-  "missingSkills": ["skill1", "skill2"],
-  "projects": [
+  "codeQuality": "excellent|good|average|needs-improvement",
+  "logicExplanation": "Brief explanation of what the code does",
+  "timeComplexity": "Explanation and Big O notation",
+  "spaceComplexity": "Explanation and Big O notation",
+  "bestPractices": [
     {
-      "name": "Project Name",
-      "description": "Brief description of what the project does",
-      "technologies": ["tech1", "tech2", "tech3"]
+      "category": "Naming|Performance|Structure|Error Handling|etc",
+      "suggestion": "Specific improvement suggestion",
+      "severity": "critical|major|minor"
     }
   ],
-  "internships": [
+  "mistakes": [
     {
-      "company": "Company Name",
-      "role": "Job Title",
-      "duration": "Duration e.g., Jan 2023 - Jun 2023",
-      "description": "Brief description of responsibilities"
+      "issue": "Description of the issue",
+      "impact": "What could go wrong",
+      "fix": "How to fix it"
     }
   ],
-  "suggestedFocusAreas": ["focus1", "focus2", "focus3", "focus4"]
-}
-
-IMPORTANT:
-- Extract ALL projects and work experience mentioned
-- Include at least 3 strengths and 3 areas to improve
-- Suggest 4 specific interview focus areas based on the resume content
-- Return ONLY valid JSON, nothing else`
+  "improvedCode": "Refactored version of the code with all fixes applied - include code comments",
+  "performance": {
+    "score": 1-10,
+    "bottlenecks": ["bottleneck1", "bottleneck2"],
+    "optimizations": ["optimization1", "optimization2"]
+  },
+  "readability": {
+    "score": 1-10,
+    "issues": ["issue1", "issue2"],
+    "suggestions": ["suggestion1", "suggestion2"]
+  },
+  "overallScore": 1-10,
+  "strengths": ["strength1", "strength2"],
+  "keyTakeaways": ["takeaway1", "takeaway2", "takeaway3"]
+}`
       },
       {
         role: "user",
-        content: `Analyze this resume and return valid JSON:
+        content: `Review this ${language} code and provide comprehensive feedback.
+${description ? `Problem Description: ${description}` : ''}
 
-${resumeContent}`
+Code to review:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Return only valid JSON with no additional text.`
       }
     ]
   };
@@ -361,87 +352,76 @@ ${resumeContent}`
     const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
     const parsed = extractJSON(response);
     
-    // Ensure all required fields exist
+    // Ensure all required fields exist with defaults
     return {
-      overallFeedback: parsed.overallFeedback || "Resume analyzed successfully",
-      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : ["Technical skills", "Project experience"],
-      areasToImprove: Array.isArray(parsed.areasToImprove) ? parsed.areasToImprove : ["Communication", "Documentation"],
-      missingSkills: Array.isArray(parsed.missingSkills) ? parsed.missingSkills : [],
-      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
-      internships: Array.isArray(parsed.internships) ? parsed.internships : [],
-      suggestedFocusAreas: Array.isArray(parsed.suggestedFocusAreas) ? parsed.suggestedFocusAreas : ["Core Programming Concepts", "Data Structures & Algorithms", "System Design", "Behavioral Questions"]
+      codeQuality: parsed.codeQuality || "good",
+      logicExplanation: parsed.logicExplanation || "Code analyzed successfully",
+      timeComplexity: parsed.timeComplexity || "Not specified",
+      spaceComplexity: parsed.spaceComplexity || "Not specified",
+      bestPractices: Array.isArray(parsed.bestPractices) ? parsed.bestPractices : [],
+      mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes : [],
+      improvedCode: parsed.improvedCode || code,
+      performance: parsed.performance || { score: 7, bottlenecks: [], optimizations: [] },
+      readability: parsed.readability || { score: 7, issues: [], suggestions: [] },
+      overallScore: parsed.overallScore || 7,
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+      keyTakeaways: Array.isArray(parsed.keyTakeaways) ? parsed.keyTakeaways : []
     };
   } catch (e) {
-    console.error("Failed to parse resume analysis response as JSON:", e);
-    // Return comprehensive default analysis
+    console.error("Failed to evaluate code:", e);
     return {
-      overallFeedback: "Resume uploaded successfully. We'll generate interview questions based on your profile.",
-      strengths: ["Technical foundation", "Demonstrated experience", "Project involvement"],
-      areasToImprove: ["Technical depth", "System design knowledge", "Communication skills"],
-      missingSkills: ["Advanced frameworks", "Cloud technologies"],
-      projects: [],
-      internships: [],
-      suggestedFocusAreas: ["Core Programming Concepts", "Data Structures & Algorithms", "System Design", "Behavioral Questions"]
+      codeQuality: "good",
+      logicExplanation: "Code uploaded for evaluation",
+      timeComplexity: "Analysis pending",
+      spaceComplexity: "Analysis pending",
+      bestPractices: [],
+      mistakes: [],
+      improvedCode: code,
+      performance: { score: 0, bottlenecks: [], optimizations: [] },
+      readability: { score: 0, issues: [], suggestions: [] },
+      overallScore: 0,
+      strengths: [],
+      keyTakeaways: []
     };
   }
 }
 
-// Helper to generate project-based interview questions
-export async function generateProjectBasedQuestions(resumeAnalysis: any) {
+// Generate code snippets for learning
+export async function generateCodeSnippets(
+  topic: string,
+  language: string,
+  difficulty: "beginner" | "intermediate" | "advanced"
+) {
   const endpoint = "/openai/v1/chat/completions";
-  
-  // Create projects list - include projects or use focus areas as fallback
-  let projectsList = "";
-  if (resumeAnalysis.projects && Array.isArray(resumeAnalysis.projects) && resumeAnalysis.projects.length > 0) {
-    projectsList = resumeAnalysis.projects.map((p: any) => 
-      `- ${p.name}: ${p.description} (Technologies: ${p.technologies?.join(', ') || 'various'})`
-    ).join('\n');
-  } else {
-    projectsList = "No specific projects provided in resume. Generate questions based on common technologies and scenarios.";
-  }
-  
-  const skillsList = (resumeAnalysis.suggestedFocusAreas && Array.isArray(resumeAnalysis.suggestedFocusAreas)) 
-    ? resumeAnalysis.suggestedFocusAreas.join(', ')
-    : "Core Programming, Data Structures, Problem Solving";
-
   const data = {
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `You are an expert technical interviewer. Generate exactly 5 MCQ questions focused on projects, skills, and technical concepts.
+        content: `You are an expert ${language} programmer. Generate 3 code snippets for learning purposes. Return ONLY valid JSON (no markdown, no code blocks).
 
-Return ONLY valid JSON (no markdown, no code blocks). Use this exact structure:
+Return exactly this JSON structure:
 {
-  "questions": [
+  "snippets": [
     {
-      "id": "q1",
-      "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
-      "keywords": ["keyword1", "keyword2"],
-      "difficulty": "easy"
+      "name": "Snippet Name",
+      "description": "What this snippet demonstrates",
+      "code": "Complete working code",
+      "explanation": "Line-by-line explanation",
+      "keyPoints": ["point1", "point2", "point3"],
+      "commonMistakes": ["mistake1", "mistake2"]
     }
   ]
-}
-
-Requirements:
-- Generate exactly 5 questions
-- Mix difficulties: 3 easy, 1 medium, 1 hard
-- Each question must have exactly 4 options
-- correctAnswer must be 0-3 (the index of the correct option)
-- Questions should test understanding of technical concepts and best practices
-- Be practical and relevant to actual development work`
+}`
       },
       {
         role: "user",
-        content: `Generate 5 interview questions based on these experience areas:
-
-Project Experience:
-${projectsList}
-
-Key Skills to Focus On:
-${skillsList}
+        content: `Generate 3 ${difficulty} level code snippets for "${topic}" in ${language}.
+Each snippet should:
+1. Be practical and useful
+2. Include detailed comments
+3. Demonstrate best practices
+4. Be copy-paste ready
 
 Return only valid JSON.`
       }
@@ -451,25 +431,12 @@ Return only valid JSON.`
   try {
     const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
     const parsed = extractJSON(response);
-    
-    // Validate and ensure proper structure
-    if (parsed.questions && Array.isArray(parsed.questions)) {
-      const questions = parsed.questions.map((q: any, idx: number) => ({
-        id: q.id || `q${idx + 1}`,
-        question: q.question || "Question",
-        options: Array.isArray(q.options) ? q.options : ["Option A", "Option B", "Option C", "Option D"],
-        correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < 4 ? q.correctAnswer : 0,
-        keywords: Array.isArray(q.keywords) ? q.keywords : [],
-        difficulty: q.difficulty || "medium"
-      }));
-      
-      return { questions };
-    }
-    
-    throw new Error("Invalid response structure");
+    return {
+      snippets: Array.isArray(parsed.snippets) ? parsed.snippets : []
+    };
   } catch (e) {
-    console.error("Failed to parse project questions response as JSON:", e);
-    return { questions: [] };
+    console.error("Failed to generate code snippets:", e);
+    return { snippets: [] };
   }
 }
 

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Mail,
-  FileText,
   MapPin,
   Calendar,
   Award,
@@ -14,6 +13,7 @@ import {
   CheckCircle,
   Loader,
   AlertCircle,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
@@ -86,25 +86,18 @@ export default function Dashboard() {
       color: "from-blue-500 to-blue-600",
     },
     {
-      icon: <FileText className="w-8 h-8" />,
-      title: "Resume Maker",
-      description: "Create professional resumes with AI-powered suggestions",
-      link: "/resume-maker",
-      color: "from-purple-500 to-purple-600",
-    },
-    {
-      icon: <Mail className="w-8 h-8" />,
-      title: "Cover Letter Generator",
-      description: "Generate customized cover letters for different job positions",
-      link: "/cover-letter",
-      color: "from-pink-500 to-pink-600",
-    },
-    {
       icon: <Code className="w-8 h-8" />,
       title: "Interview Prep",
       description: "Practice coding problems and prepare for technical interviews",
       link: "/interview-prep",
       color: "from-green-500 to-green-600",
+    },
+    {
+      icon: <Zap className="w-8 h-8" />,
+      title: "AI Code Evaluator",
+      description: "Get AI-powered feedback on your code with analysis and improvements",
+      link: "/code-evaluator",
+      color: "from-red-500 to-red-600",
     },
     {
       icon: <MapPin className="w-8 h-8" />,

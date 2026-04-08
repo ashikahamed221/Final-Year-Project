@@ -1,28 +1,3 @@
-// const API_URL = "http://localhost:5000";
-
-// export const getUserTests = async () => {
-//   const token = localStorage.getItem("token");
-
-//   const res = await fetch(`${API_URL}/user-tests`, {
-//     headers: {
-//       Authorization: `Bearer ${token}`
-//     }
-//   });
-
-//   return res.json();
-// };
-
-// export const getTestDetails = async (id) => {
-//   const token = localStorage.getItem("token");
-
-//   const res = await fetch(`${API_URL}/test/${id}`, {
-//     headers: {
-//       Authorization: `Bearer ${token}`
-//     }
-//   });
-
-//   return res.json();
-// };
 const API_URL = "https://ai-backend-r57w.onrender.com";
 
 export const getUserTests = async () => {

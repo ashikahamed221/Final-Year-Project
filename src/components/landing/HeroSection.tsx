@@ -31,7 +31,7 @@ const HeroSection = () => {
 
 
 
-      <div className="container relative z-10 mx-auto px-4 mt-20 text-center">
+      <div className="container relative z-10 mx-auto px-4 pb-20 text-center">
         <div
           className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/50 px-4 py-2 text-sm opacity-0 animate-fade-in"
           style={{ animationDelay: "0.1s" }}
@@ -69,7 +69,7 @@ const HeroSection = () => {
             asChild
           >
             <Link to="/auth?mode=signup">
-              Start Free
+              Get Started
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>

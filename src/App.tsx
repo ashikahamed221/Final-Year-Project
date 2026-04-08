@@ -12,8 +12,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 
 
-import CoverLetterGenerator from "./pages/CoverLetterGenerator";
-import ResumeMaker from "./pages/ResumeMaker";
 import CareerRoadmap from "./pages/CareerRoadmap";
 import InterviewPrep from "./pages/InterviewPrep";
 import QuizApp from "./pages/QuizApp";
@@ -21,6 +19,8 @@ import Features from "./components/landing/Features";
 import InterviewHistory from "./pages/InterviewHistory";
 import InterviewDetails from "./pages/InterviewDetails";
 import Dashboard from "./pages/Dashboard";
+import CodingPrepRound from "./pages/CodingPrepRound";
+import CodeEvaluatorPage from "./pages/CodeEvaluatorPage";
 
 const queryClient = new QueryClient();
 
@@ -67,16 +67,6 @@ const App = () => {
               />
 
               <Route
-                path="/cover-letter"
-                element={user ? <CoverLetterGenerator /> : <Navigate to="/login" replace />}
-              />
-
-              <Route
-                path="/resume-maker"
-                element={user ? <ResumeMaker /> : <Navigate to="/login" replace />}
-              />
-
-              <Route
                 path="/career-roadmap"
                 element={user ? <CareerRoadmap /> : <Navigate to="/login" replace />}
               />
@@ -89,6 +79,16 @@ const App = () => {
               <Route
                 path="/dashboard"
                 element={user ? <Dashboard /> : <Navigate to="/login" replace />}
+              />
+
+              <Route
+                path="/coding-prep-round"
+                element={user ? <CodingPrepRound /> : <Navigate to="/login" replace />}
+              />
+
+              <Route
+                path="/code-evaluator"
+                element={user ? <CodeEvaluatorPage /> : <Navigate to="/login" replace />}
               />
 
               <Route
