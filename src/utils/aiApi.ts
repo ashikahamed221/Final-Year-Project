@@ -1,7 +1,7 @@
 import { Content } from "vaul";
 import { callGroqAPI } from "../lib/utils";
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
+const VITE_GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
 
 // Helper to generate career roadmap
 export async function generateRoadmap(targetRole: string, skillLevel: string, techStack: string) {
@@ -41,7 +41,7 @@ export async function generateRoadmap(targetRole: string, skillLevel: string, te
   };
   
   try {
-    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    const response = await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
     return extractJSON(response);
   } catch (e) {
     console.error("Failed to parse AI response as JSON:", e);
@@ -90,7 +90,7 @@ export async function generateInterviewResponse(messages: { role: string; conten
       ...messages
     ]
   };
-  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
+  return await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
 }
 
 // Helper for mock interview question explanations
@@ -122,7 +122,7 @@ Provide a clear, interview-focused explanation.`
       }
     ]
   };
-  return await callGroqAPI(endpoint, data, GROQ_API_KEY);
+  return await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
 }
 
 // Helper to build context-aware prompt based on domain/round type
@@ -237,7 +237,7 @@ export async function generateInterviewQuestions(domain: string, domainLabel: st
   };
 
   try {
-    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    const response = await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
     const parsed = extractJSON(response);
     
     // Validate questions format
@@ -349,7 +349,7 @@ Return only valid JSON with no additional text.`
   };
 
   try {
-    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    const response = await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
     const parsed = extractJSON(response);
     
     // Ensure all required fields exist with defaults
@@ -429,7 +429,7 @@ Return only valid JSON.`
   };
 
   try {
-    const response = await callGroqAPI(endpoint, data, GROQ_API_KEY);
+    const response = await callGroqAPI(endpoint, data, VITE_GROQ_API_KEY);
     const parsed = extractJSON(response);
     return {
       snippets: Array.isArray(parsed.snippets) ? parsed.snippets : []

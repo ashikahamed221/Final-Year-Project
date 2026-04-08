@@ -30,9 +30,9 @@ app.use(express.json());
 const agent = new https.Agent({ keepAlive: true });
 
 async function callGroqCodeReview(code, language) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.VITE_GROQ_API_KEY;
   if (!apiKey) {
-    throw new Error("GROQ_API_KEY is not configured in server .env");
+    throw new Error("VITE_GROQ_API_KEY is not configured in server .env");
   }
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -237,7 +237,7 @@ app.post("/api/code-review", async (req, res) => {
   } catch (error) {
     console.error("Code review error:", error);
 
-    if (error.message?.includes("GROQ_API_KEY")) {
+    if (error.message?.includes("VITE_GROQ_API_KEY")) {
       return res.status(500).json({
         error: "Code review service is not configured on the server.",
       });
