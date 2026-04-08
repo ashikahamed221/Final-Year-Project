@@ -18,7 +18,7 @@ const app = express();
 app.use(
   cors({
     origin: ["http://localhost:5173",
-      "https://final-year-project-flnkdq763-ashiks-projects-75743e6d.vercel.app/"
+      "https://final-year-project-iota-seven.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
