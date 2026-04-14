@@ -6,7 +6,8 @@ import {
   Linkedin,
   FileUser,
   LucideIcon,
-  BookOpenCheck
+  BookOpenCheck,
+  BarChart3
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -20,35 +21,35 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: BookOpenCheck,
-    title: "AI Mock Interview",
+    icon: MessageSquare,
+    title: "AI Interview Preparation Chatbot",
     description:
-      "Practice with an AI interviewer that simulates real interview scenarios and gives feedback.",
+      "Domain-specific explanations, structured answers, communication guidance, and follow-up questions to master technical and behavioral interviews.",
     color: "text-feature-blue",
     bgColor: "bg-feature-blue/10",
   },
   {
-    icon: Map,
-    title: "AI Career Roadmap",
+    icon: BookOpenCheck,
+    title: "Intelligent Code Evaluation",
     description:
-      "Get AI-generated career paths and skill development plans based on your goals.",
+      "AI-powered code analysis with real-time feedback on logic, optimization strategies, and time-complexity with suggestions for improvement.",
     color: "text-feature-purple",
     bgColor: "bg-feature-purple/10",
   },
   {
-    icon: MessageSquare,
-    title: "AI Interview Prep ",
+    icon: Map,
+    title: "Dynamic Roadmap Generator",
     description:
-      "Practice with an AI interviewer that simulates real interview scenarios and gives feedback.",
+      "Personalized learning paths based on your current skills, career goals, and assessment performance for targeted development.",
     color: "text-feature-green",
     bgColor: "bg-feature-green/10",
   },
   
   {
-    icon: FileUser,
-    title: "Resume Maker",
+    icon: BarChart3,
+    title: "Adaptive Mock Interview System",
     description:
-      "Build ATS-friendly resumes with AI-enhanced descriptions and formatting.",
+      "AI-generated MCQs, rapid-answer detection, intelligent explanations, and comprehensive performance analytics through detailed dashboards.",
     color: "text-feature-pink",
     bgColor: "bg-feature-pink/10",
   },
@@ -60,12 +61,11 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Everything You Need to{" "}
-            <span className="gradient-text">Land Your Dream Job</span>
+            Four AI-Driven Modules for{" "}
+            <span className="gradient-text">Complete Interview Mastery</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            Five powerful AI tools designed to accelerate every step of your job
-            search and career development.
+            Integrated AI modules designed to enhance technical skills, interview readiness, and career planning through personalized guidance and real-time feedback.
           </p>
         </div>
 

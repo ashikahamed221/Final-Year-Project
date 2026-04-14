@@ -34,14 +34,13 @@ const ChallengesSection = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center mb-10 md:mb-14">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Why interview prep feels{" "}
+            Challenges We{" "}
             <span className="bg-gradient-to-r from-primary to-red-500 bg-clip-text text-transparent">
-              difficult
+              Address
             </span>
           </h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
-            Before we fix it, let’s be honest about the common problems students
-            and freshers face while preparing for placements and interviews.
+            Students and job seekers face significant hurdles in technical preparation. Our system directly tackles these barriers with intelligent solutions.
           </p>
         </div>
 

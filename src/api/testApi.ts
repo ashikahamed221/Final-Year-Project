@@ -26,5 +26,5 @@ export async function getUserTests(userId: string) {
       "Content-Type": "application/json",
     },
   }).then((res) => console.log(res.json()));
-  console.log
+  
 }

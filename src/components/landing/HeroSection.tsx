@@ -38,7 +38,7 @@ const HeroSection = () => {
         >
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-muted-foreground">
-            AI-Powered Career Success
+            Intelligent Adaptive Assessment System
           </span>
         </div>
 
@@ -47,16 +47,14 @@ const HeroSection = () => {
           style={{ animationDelay: "0.2s" }}
         >
           Your AI Interview{" "}
-          <span className="gradient-text">Coach & Assistant</span>
+          <span className="gradient-text"> Coach & Assistant</span>
         </h1>
 
         <p
           className="mx-auto mt-6 max-w-2xl text-lg text-center text-muted-foreground opacity-0 animate-fade-in-up sm:text-xl"
           style={{ animationDelay: "0.3s" }}
         >
-          Generate stunning cover letters, build professional resumes, AI 
-          Mock interview, AI Roadmap Generater,all powered by
-          advanced AI.
+          Personalized interview preparation, intelligent code evaluation, dynamic learning paths, and adaptive mock interviews—all powered by generative AI to accelerate your career readiness.
         </p>
 
         <div

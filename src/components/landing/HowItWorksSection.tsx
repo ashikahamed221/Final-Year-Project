@@ -16,15 +16,15 @@ const steps: Step[] = [
     icon: ListChecks,
   },
   {
-    title: "AI creates your question set",
+    title: "Engage with AI Modules",
     description:
-      "The platform generates targeted MCQs for your selection so every test feels like a real interview screen.",
+      "Interact with the interview chatbot for explanations, submit code for intelligent evaluation, and participate in adaptive mock interviews.",
     icon: PlayCircle,
   },
   {
-    title: "Attempt the test with timing",
+    title: "Receive Real-Time Feedback",
     description:
-      "Answer questions one by one while the timer tracks response time and discourages random clicks or tab switching.",
+      "Get instant analysis on your code, detailed explanations for complex concepts, and immediate performance scoring on assessments.",
     icon: Clock,
   },
   {
@@ -64,14 +64,13 @@ const HowItWorksSection = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center mb-10 md:mb-14">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            How the platform{" "}
+            How Our System{" "}
             <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-              works
+              Works
             </span>
           </h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
-            Follow a clear, left-to-right flow—from choosing your round to reviewing a
-            full performance summary.
+            A comprehensive workflow combining AI-driven analysis, real-time feedback, and personalized learning to maximize your interview readiness and career growth.
           </p>
         </div>
 

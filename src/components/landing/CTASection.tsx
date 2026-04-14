@@ -18,11 +18,10 @@ const CTASection = () => {
 
           <div className="relative z-10 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-              Ready to Accelerate Your Career?
+              Transform Your Interview Preparation Today
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-              Join thousands of job seekers using AI to land their dream roles
-              faster.
+              Experience AI-driven personalized learning, instant feedback, and adaptive assessments designed to maximize your technical skills and interview readiness.
             </p>
             <div className="mt-8">
               <Button
